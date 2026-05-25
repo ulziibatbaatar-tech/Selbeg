@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Best Shoes - Агуулахын Нэгдсэн Мэргэжлийн Excel Систем</title>
+    <title>Best Shoes - Агуулахын Мэргэжлийн Excel Систем</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js" crossorigin></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js" crossorigin></script>
@@ -44,7 +44,7 @@
             box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1);
             border-radius: 8px;
             padding: 6px;
-            width: 220px;
+            width: 230px;
             font-size: 13px;
         }
         .excel-context-menu button {
@@ -60,7 +60,6 @@
         .excel-context-menu button:hover {
             background-color: #f1f5f9;
         }
-        /* Багана өргөсгөгч зураас */
         .col-resize-handle {
             position: absolute;
             right: 0;
@@ -89,65 +88,68 @@
           const [systemPassword, setSystemPassword] = useState('9761'); 
           const [newPasswordInput, setNewPasswordInput] = useState('');
 
-          // --- 2. НАВИГАЦИ & ХАЙЛТ ---
+          // --- 2. НАВИГАЦИ ---
           const [activeMenu, setActiveMenu] = useState('Сэлбэгийн бүртгэл');
-          const [searchTerm, setSearchTerm] = useState('');
           
-          // --- 3. EXCEL-ИЙН ОЛОН ХУУДАС (SHEETS) ---
+          // --- 3. EXCEL-ИЙН ОЛОН ХУУДАС (3-р зургийн 4-р мөрөөр шинэчлэгдсэн баганууд) ---
           const [currentSheet, setCurrentSheet] = useState('2026-01');
+          
+          // Баганы жинхэнэ нэрс (Зургийн дагуу зассан бүтэц)
+          const [headers, setHeaders] = useState([
+            { id: 'c1', label: 'Сэлбэг хэрэгслийн нэрс', visible: true, width: 220 },
+            { id: 'c2', label: 'Марка, марк дугаар', visible: true, width: 150 },
+            { id: 'c3', label: 'Хэмжих нэгж', visible: true, width: 100 },
+            { id: 'c4', label: 'Эхний үлдэгдэл', visible: true, width: 120 },
+            { id: 'c5', label: 'Орлого', visible: true, width: 100 },
+            { id: 'c6', label: 'Зарлага', visible: true, width: 100 },
+            { id: 'c7', label: 'Эцсийн үлдэгдэл', visible: true, width: 120 },
+            { id: 'c8', label: 'Тайлант хугацаанд авсан өгсөн тасаг цех', visible: true, width: 250 }
+          ]);
+
           const [sheets, setSheets] = useState({
             '2026-01': [
-              ['Пүрш', 'SPR-001', '120', '20', '100', 'Блю Стар ХХК'],
-              ['Боолт M10', 'BLT-010', '500', '50', '450', 'Техно Импекс']
+              ['Оёдол пүрш маск', 'OP-2026', 'ш', '100', '50', '20', '130', 'Оёдлын тасаг'],
+              ['Хот мелт цавууны хошуу', 'HM-09', 'ш', '20', '10', '5', '25', 'Механик цех']
             ],
-            '2026-02': [
-              ['LED гэрэл 50W', 'LED-050', '30', '0', '30', 'Электро Сервис'],
-              ['Ажлын бээлий', 'GLV-002', '200', '15', '185', 'Дотоод Сорс']
-            ],
-            '2026-03': [['Пүрш', 'SPR-001', '50', '10', '40', 'Блю Стар ХХК']],
+            '2026-02': [],
+            '2026-03': [],
             '2026-04': [],
             '2026-05': []
           });
 
-          // Багануудын стайл, өргөн (Мэргэжлийн багана өргөсгөгчтэй)
-          const [headers, setHeaders] = useState([
-            { id: 'h1', label: 'Барааны нэр', visible: true, width: 160 },
-            { id: 'h2', label: 'Материалын код', visible: true, width: 140 },
-            { id: 'h3', label: 'Орлого (Тоо)', visible: true, width: 120 },
-            { id: 'h4', label: 'Зарлага (Тоо)', visible: true, width: 120 },
-            { id: 'h5', label: 'Үлдэгдэл', visible: true, width: 120 },
-            { id: 'h6', label: 'Нийлүүлэгч / Тасаг', visible: true, width: 180 }
-          ]);
-
-          // --- 4. ХУЛГАНААР ИДЭВХЖҮҮЛЭХ (SELECTION) & ТҮРГЭН ТОВЧЛУУР ---
+          // --- 4. SELECTION & SHORTCUTS ---
           const [isSelecting, setIsSelecting] = useState(false);
-          const [selectionStart, setSelectionStart] = useState(null); // {r, c}
-          const [selectionEnd, setSelectionEnd] = useState(null);     // {r, c}
+          const [selectionStart, setSelectionStart] = useState(null); 
+          const [selectionEnd, setSelectionEnd] = useState(null);     
           const [selectAll, setSelectAll] = useState(false);
-          const [copiedData, setCopiedData] = useState(null); // Ctrl+C хуулалт
+          const [copiedData, setCopiedData] = useState(null);
 
-          // --- 5. УХААЛАГ ЦЭСНИЙ ТӨЛӨВ ---
+          // --- 5. ЦЭСНИЙ ТӨЛӨВ ---
           const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, rIdx: null, cIdx: null, type: 'cell' });
           const [sheetTarget, setSheetTarget] = useState(null);
 
-          // Орлого / Зарлагын модаль
+          // Орлого / Зарлагын модаль цонх
           const [isIncomingModalOpen, setIsIncomingModalOpen] = useState(false);
           const [isOutgoingModalOpen, setIsOutgoingModalOpen] = useState(false);
-          const [modalForm, setModalForm] = useState({ name: '', code: '', qty: '', extra: '' });
+          const [modalForm, setModalForm] = useState({ name: '', code: '', qty: '', extra: '', initial: '0' });
 
           const matrix = sheets[currentSheet] || [];
 
-          // Автомат үлдэгдэл бодогч томьёо
+          // Эцсийн үлдэгдлийг автоматаар бодох ухаалаг Excel томьёо (Эхний үлдэгдэл + Орлого - Зарлага = Эцсийн үлдэгдэл)
           useEffect(() => {
             const currentData = sheets[currentSheet];
             if (!currentData) return;
 
             const updated = currentData.map(row => {
-              const inc = parseFloat(row[2]) || 0;
-              const out = parseFloat(row[3]) || 0;
-              const rem = inc - out;
+              const initStock = parseFloat(row[3]) || 0; // Эхний үлдэгдэл
+              const income = parseFloat(row[4]) || 0;    // Орлого
+              const outcome = parseFloat(row[5]) || 0;   // Зарлага
+              const finalStock = initStock + income - outcome; // Эцсийн үлдэгдэл
+              
               const newRow = [...row];
-              if(newRow.length > 4) newRow[4] = rem.toString();
+              if (newRow.length >= 7) {
+                newRow[6] = finalStock.toString();
+              }
               return newRow;
             });
 
@@ -156,7 +158,7 @@
             }
           }, [matrix, currentSheet]);
 
-          // СИСТЕМИЙН ТҮРГЭН ТОВЧЛУУРУУД (Excel Shortcuts)
+          // EXCEL ТҮРГЭН ТОВЧЛУУРУУД (Ctrl+C, Ctrl+V, Delete)
           useEffect(() => {
             const handleKeyDown = (e) => {
               if (!selectionStart || !selectionEnd) return;
@@ -166,9 +168,8 @@
               const startC = Math.min(selectionStart.c, selectionEnd.c);
               const endC = Math.max(selectionStart.c, selectionEnd.c);
 
-              // 1. Delete эсвэл Backspace - Сонгосон нүднүүдийг цувраа устгах
               if (e.key === 'Delete' || e.key === 'Backspace') {
-                if (document.activeElement.tagName === 'INPUT') return; // Бичиж байвал устгахгүй
+                if (document.activeElement.tagName === 'INPUT') return;
                 e.preventDefault();
                 const updated = [...matrix];
                 for (let r = startR; r <= endR; r++) {
@@ -179,7 +180,6 @@
                 setSheets({ ...sheets, [currentSheet]: updated });
               }
 
-              // 2. Ctrl + C (Copy)
               if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
                 if (document.activeElement.tagName === 'INPUT') return;
                 e.preventDefault();
@@ -194,7 +194,6 @@
                 setCopiedData(subGrid);
               }
 
-              // 3. Ctrl + V (Paste)
               if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
                 if (document.activeElement.tagName === 'INPUT') return;
                 if (!copiedData) return;
@@ -218,7 +217,7 @@
             return () => window.removeEventListener('keydown', handleKeyDown);
           }, [selectionStart, selectionEnd, matrix, copiedData, currentSheet]);
 
-          // --- БАГАНЫ ӨРГӨН ЧИРЧ ӨӨРЧЛӨХ (RESIZE) ---
+          // БАГАНЫ ӨРГӨН ЧИРЧ ӨӨРЧЛӨХ
           const handleResizeMouseDown = (idx, e) => {
             e.preventDefault();
             const startX = e.pageX;
@@ -241,11 +240,11 @@
             window.addEventListener('mouseup', handleMouseUp);
           };
 
-          // --- ШЭЭТ (SHEET) ҮЙЛДЛҮҮД ---
+          // ШЭЭТ (SHEET) УДИРДЛАГА
           const addNewMonthSheet = () => {
-            const monthName = prompt("Шинэ хуудасны нэрийг оруулна уу (Жишээ нь: 2026-06):", "2026-06");
+            const monthName = prompt("Шинэ сар / хуудасны нэрийг оруулна уу (Жишээ нь: 2026-06):", "2026-06");
             if (!monthName) return;
-            if (sheets[monthName]) return alert("Энэ хуудас аль хэдийн байна!");
+            if (sheets[monthName]) return alert("Энэ хуудас аль хэдийн үүссэн байна!");
             setSheets({ ...sheets, [monthName]: [] });
             setCurrentSheet(monthName);
           };
@@ -260,7 +259,7 @@
             if (!sheetTarget) return;
             const newName = prompt(`"${sheetTarget}" хуудасны шинэ нэр:`, sheetTarget);
             if (!newName || newName === sheetTarget) return;
-            if (sheets[newName]) return alert("Ийм нэртэй хуудас аль хэдийн байна!");
+            if (sheets[newName]) return alert("Ийм нэртэй хуудас байна!");
             
             const updatedSheets = { ...sheets };
             updatedSheets[newName] = updatedSheets[sheetTarget];
@@ -280,7 +279,7 @@
             }
           };
 
-          // --- ХУЛГАНААР ОЛОН НҮД ИДЭВХЖҮҮЛЭХ ---
+          // ХУЛГАНААР ИДЭВХЖҮҮЛЭХ
           const handleMouseDown = (rIdx, cIdx, e) => {
             if (e.button === 2) return; 
             setSelectAll(false);
@@ -316,7 +315,6 @@
             setContextMenu({ visible: true, x: e.pageX, y: e.pageY, rIdx, cIdx, type: 'cell' });
           };
 
-          // --- МӨР, БАГАНА НЭМЭХ ХАСАХ ---
           const insertRow = (direction) => {
             const { rIdx } = contextMenu;
             if (rIdx === null) return;
@@ -334,15 +332,7 @@
             setSheets({ ...sheets, [currentSheet]: updated });
           };
 
-          const clearContents = () => {
-            const { rIdx, cIdx } = contextMenu;
-            if (rIdx === null || cIdx === null) return;
-            const updated = [...matrix];
-            updated[rIdx][cIdx] = '';
-            setSheets({ ...sheets, [currentSheet]: updated });
-          };
-
-          // --- 📁 ЖИНХЭНЭ EXCEL / ODS ФАЙЛ ИМПОРТЛОХ ---
+          // 📁 EXCEL / ODS ИМПОРТЫН УХААЛАГ СҮҮЛ БАГАНА ТАНИГЧ
           const handleFileUpload = (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -355,9 +345,20 @@
                 
                 wb.SheetNames.forEach((name) => {
                   const data = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1 });
-                  if (data.length > 0) {
-                    // Эхний мөрийг багана гэж үзнэ
-                    importedSheets[name] = data.slice(1).map(row => row.map(cell => cell?.toString() || ''));
+                  if (data.length > 4) {
+                    // 4-р мөрнөөс дооших өгөгдлийг цэвэрлэж авна
+                    importedSheets[name] = data.slice(4).map(row => {
+                      return [
+                        row[1]?.toString() || '', // Сэлбэг хэрэгслийн нэрс
+                        row[2]?.toString() || '', // Марк дугаар
+                        row[3]?.toString() || 'ш',// Хэмжих нэгж
+                        row[4]?.toString() || '0',// Эхний үлдэгдэл
+                        row[5]?.toString() || '0',// Орлого
+                        row[6]?.toString() || '0',// Зарлага
+                        row[7]?.toString() || '0',// Эцсийн үлдэгдэл
+                        row[8]?.toString() || ''  // Тасаг цех
+                      ];
+                    });
                   } else {
                     importedSheets[name] = [];
                   }
@@ -365,36 +366,36 @@
 
                 setSheets(importedSheets);
                 setCurrentSheet(wb.SheetNames[0]);
-                setActiveMenu('Сэлбэгийн бүртгэл'); // Шууд хүснэгт рүү шилжих
-                alert("Excel файлыг амжилттай уншиж, Sheet-үүдийг үүсгэлээ!");
+                setActiveMenu('Сэлбэгийн бүртгэл');
+                alert("Файлыг 4-р мөрний баганы бүтцээр амжилттай хөрвүүлж уншлаа!");
               } catch (err) { 
-                alert("Файлыг уншихад алдаа гарлаа. Зөв .xlsx эсвэл .ods файл эсэхийг шалгана уу."); 
+                alert("Файлыг уншиж чадсангүй, зөв .xlsx эсвэл .ods файл сонгоно уу."); 
               }
             };
             reader.readAsBinaryString(file);
           };
 
-          // Системд нэвтрэх удирдамж
           const handleLogin = (e) => {
             e.preventDefault();
             if (password === systemPassword) setIsLoggedIn(true);
             else alert('Нууц үг буруу байна!');
           };
 
-          // Тооцооллын нэгдсэн дүн
-          const totalIn = matrix.reduce((s, r) => s + (parseFloat(r[2]) || 0), 0);
-          const totalOut = matrix.reduce((s, r) => s + (parseFloat(r[3]) || 0), 0);
-          const totalStock = matrix.reduce((s, r) => s + (parseFloat(r[4]) || 0), 0);
+          // Нийт дүнгийн тооцоо
+          const totalInit = matrix.reduce((s, r) => s + (parseFloat(r[3]) || 0), 0);
+          const totalIn = matrix.reduce((s, r) => s + (parseFloat(r[4]) || 0), 0);
+          const totalOut = matrix.reduce((s, r) => s + (parseFloat(r[5]) || 0), 0);
+          const totalFinal = matrix.reduce((s, r) => s + (parseFloat(r[6]) || 0), 0);
 
           if (!isLoggedIn) {
             return (
               <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
                 <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center space-y-4">
                   <h1 className="text-2xl font-black text-slate-800 tracking-wider">BEST SHOES</h1>
-                  <p className="text-slate-400 text-xs">Агуулахын Мэргэжлийн Excel Систем</p>
+                  <p className="text-slate-400 text-xs">Агуулахын Мэргэжлийн Сэлбэг Тайлан</p>
                   <form onSubmit={handleLogin} className="space-y-4">
-                    <input type="password" placeholder="Нууц үг" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border p-3 rounded-xl text-sm outline-none focus:border-blue-500 text-center font-bold" />
-                    <button type="submit" className="w-full bg-slate-900 text-white font-bold p-3 rounded-xl text-sm shadow-md cursor-pointer">Систем рүү нэвтрэх</button>
+                    <input type="password" placeholder="Нэвтрэх нууц үг" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border p-3 rounded-xl text-sm text-center font-bold outline-none focus:border-blue-500" />
+                    <button type="submit" className="w-full bg-slate-900 text-white font-bold p-3 rounded-xl text-sm shadow-md cursor-pointer">Нэвтрэх</button>
                   </form>
                 </div>
               </div>
@@ -404,11 +405,11 @@
           return (
             <div className="min-h-screen flex bg-slate-100" onClick={() => setContextMenu({ ...contextMenu, visible: false })} onMouseUp={() => setIsSelecting(false)}>
               
-              {/* ЗҮҮН ТАЛЫН ЦЭС - ФАЙЛ ОРУУЛАХ ЦЭС ЭРГЭЖ ИРСЭН */}
+              {/* ЗҮҮН ТАЛЫН ҮНДСЭН ЦЭС */}
               <aside className="w-64 bg-slate-900 text-white p-6 hidden md:flex flex-col shadow-xl select-none">
                 <div className="mb-8">
                   <h1 className="text-xl font-bold tracking-wider text-blue-400">BEST SHOES</h1>
-                  <p className="text-slate-400 text-xs mt-0.5">Мэргэжлийн Хяналт</p>
+                  <p className="text-slate-400 text-xs mt-0.5">Үйлдвэрлэл & Сэлбэг агуулах</p>
                 </div>
                 <nav className="space-y-1 flex-1">
                   {[
@@ -426,45 +427,50 @@
                   ))}
                 </nav>
                 <div className="pt-4 border-t border-slate-800">
-                  <button onClick={() => setIsLoggedIn(false)} className="w-full bg-slate-800 text-slate-300 text-xs py-2 rounded-lg transition font-medium cursor-pointer">🚪 Гарах</button>
+                  <button onClick={() => setIsLoggedIn(false)} className="w-full bg-slate-800 text-slate-300 text-xs py-2 rounded-lg cursor-pointer">🚪 Гарах</button>
                 </div>
               </aside>
 
-              {/* БАРУУН ТАЛЫН ҮНДСЭН ХЭСЭГ */}
+              {/* БАРУУН ТАЛЫН ҮНДСЭН АЖЛЫН ТАЛБАР */}
               <main className="flex-1 p-6 overflow-y-auto flex flex-col justify-between">
                 <div>
-                  {/* ДЭЭД ХЭСЭГ */}
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                     <div>
                       <h2 className="text-xl font-bold text-slate-800">{activeMenu} {activeMenu === 'Сэлбэгийн бүртгэл' && `(${currentSheet})`}</h2>
-                      <p className="text-slate-400 text-xs mt-0.5">Устгахдаа Backspace/Delete, хуулахдаа Ctrl+C, наахдаа Ctrl+V ашиглана уу.</p>
+                      <p className="text-slate-400 text-xs mt-0.5">Зургийн 4-р мөрний дагуу баганы нэрсийг бүрэн шинэчилж, томьёог суулгав.</p>
                     </div>
-                    {activeMenu === 'Сэлбэгийн бү7тгэл' && (
+                    {activeMenu === 'Сэлбэгийн бүртгэл' && (
                       <div className="flex gap-2">
-                        <button onClick={() => setIsIncomingModalOpen(true)} className="bg-blue-600 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow cursor-pointer">+ Орлого</button>
-                        <button onClick={() => setIsOutgoingModalOpen(true)} className="bg-orange-600 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow cursor-pointer">- Зарлага</button>
+                        <button onClick={() => setIsIncomingModalOpen(true)} className="bg-blue-600 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow cursor-pointer">+ Орлого авах</button>
+                        <button onClick={() => setIsOutgoingModalOpen(true)} className="bg-orange-600 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow cursor-pointer">- Зарлага гаргах</button>
                       </div>
                     )}
                   </div>
 
-                  {/* 1. СЭЛБЭГИЙН БҮРТГЭЛИЙН EXCEL ОРЧИН */}
+                  {/* 1. СЭЛБЭГИЙН БҮРТГЭЛ ХҮСНЭГТ */}
                   {activeMenu === 'Сэлбэгийн бүртгэл' && (
                     <>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                      {/* НЭГДҮҮЛСЭН САТ СУУРЬТАЙ ДҮННҮҮД */}
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 text-center">
+                          <p className="text-slate-400 text-xs font-bold uppercase">Эхний үлдэгдэл</p>
+                          <h3 className="text-lg font-black mt-1 text-slate-700">{totalInit.toLocaleString()} ш</h3>
+                        </div>
                         <div className="bg-white p-4 rounded-xl border border-slate-200 text-center">
                           <p className="text-slate-400 text-xs font-bold uppercase">Нийт Орлого</p>
-                          <h3 className="text-xl font-black mt-1 text-blue-600">{totalIn.toLocaleString()} ш</h3>
+                          <h3 className="text-lg font-black mt-1 text-blue-600">+{totalIn.toLocaleString()} ш</h3>
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-slate-200 text-center">
                           <p className="text-slate-400 text-xs font-bold uppercase">Нийт Зарлага</p>
-                          <h3 className="text-xl font-black mt-1 text-orange-600">{totalOut.toLocaleString()} ш</h3>
+                          <h3 className="text-lg font-black mt-1 text-orange-600">-{totalOut.toLocaleString()} ш</h3>
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-slate-200 text-center">
-                          <p className="text-slate-400 text-xs font-bold uppercase">Сарын Үлдэгдэл</p>
-                          <h3 className="text-xl font-black mt-1 text-emerald-600">{totalStock.toLocaleString()} ш</h3>
+                          <p className="text-slate-400 text-xs font-bold uppercase">Эцсийн Үлдэгдэл</p>
+                          <h3 className="text-lg font-black mt-1 text-emerald-600">{totalFinal.toLocaleString()} ш</h3>
                         </div>
                       </div>
 
+                      {/* ЖИНХЭНЭ EXCEL ХҮСНЭГТ */}
                       <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                         <div className="overflow-x-auto border border-slate-200 rounded-xl relative">
                           <table className="w-full text-left border-collapse">
@@ -472,9 +478,8 @@
                               <tr className="bg-slate-50 select-none">
                                 <th onClick={() => setSelectAll(!selectAll)} className="border p-2 text-xs text-slate-400 bg-slate-100 text-center cursor-pointer w-12">◤</th>
                                 {headers.map((h, idx) => h.visible && (
-                                  <th key={h.id} onContextMenu={(e) => handleCellContextMenu(e, null, idx)} style={{ width: h.width || 130 }} className="border p-2.5 text-xs font-bold text-slate-600 bg-slate-100 relative truncate">
+                                  <th key={h.id} onContextMenu={(e) => handleCellContextMenu(e, null, idx)} style={{ width: h.width || 140 }} className="border p-2.5 text-xs font-bold text-slate-600 bg-slate-100 relative truncate">
                                     {h.label}
-                                    {/* Баганы өргөн өөрчлөх handle */}
                                     <div className="col-resize-handle" onMouseDown={(e) => handleResizeMouseDown(idx, e)}></div>
                                   </th>
                                 ))}
@@ -496,7 +501,8 @@
                                         type="text" 
                                         value={row[cIdx] || ''} 
                                         onChange={(e) => handleInputChange(e.target.value, rIdx, cIdx)}
-                                        className="excel-input"
+                                        disabled={cIdx === 6} // Эцсийн үлдэгдэл автоматаар бодогдох тул цоожилно
+                                        className={`excel-input ${cIdx === 6 ? 'font-bold text-emerald-600 bg-emerald-50/30' : ''}`}
                                       />
                                     </td>
                                   ))}
@@ -509,15 +515,15 @@
                     </>
                   )}
 
-                  {/* 2. EXCEL ФАЙЛ ИМПОРТЛОХ ХЭСЭГ (БУЦАЖ ИРСЭН) */}
+                  {/* 2. EXCEL / ODS ФАЙЛ ИМПОРТЛОХ ЦЭС */}
                   {activeMenu === 'Excel / ODS импорт' && (
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-md mx-auto text-center space-y-4 my-12">
                       <span className="text-4xl block">📁</span>
-                      <h3 className="text-base font-bold text-slate-800">Excel эсвэл ODS файл уншуулах</h3>
-                      <p className="text-slate-400 text-xs">Файлыг оруулахад систем автоматаар доторх бүх хуудас, саруудыг салган доор байрлах хуудаснуудад үүсгэх болно.</p>
+                      <h3 className="text-base font-bold text-slate-800">Сэлбэгийн файл хуулах</h3>
+                      <p className="text-slate-400 text-xs">Та өөрийн файлаа оруулснаар систем автоматаар 4-р мөрний бүтэц рүү хөрвүүлж, сар сарын Sheet-ийг үүсгэнэ.</p>
                       <div className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-8 bg-slate-50 relative cursor-pointer transition">
                         <input type="file" accept=".xlsx, .xls, .ods" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                        <p className="text-xs font-medium text-slate-600">Сэлбэг агуулахын файлаа энд дарж сонгоно уу</p>
+                        <p className="text-xs font-medium text-slate-600">Энд дарж файлаа уншуулна уу</p>
                       </div>
                     </div>
                   )}
@@ -525,17 +531,17 @@
                   {/* 3. ТОХИРГОО */}
                   {activeMenu === 'Тохиргоо' && (
                     <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-md space-y-4">
-                      <h4 className="font-bold text-slate-800 text-base">🔐 Системийн код засах</h4>
-                      <input type="text" placeholder="Шинэ код" value={newPasswordInput} onChange={(e) => setNewPasswordInput(e.target.value)} className="w-full border p-2.5 rounded-xl text-xs" />
-                      <button onClick={() => { setSystemPassword(newPasswordInput); alert("Амжилттай солигдлоо"); }} className="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs cursor-pointer">Хадгалах</button>
+                      <h4 className="font-bold text-slate-800 text-base">🔐 Системийн код солих</h4>
+                      <input type="text" placeholder="Шинэ код оруулна уу" value={newPasswordInput} onChange={(e) => setNewPasswordInput(e.target.value)} className="w-full border p-2.5 rounded-xl text-xs" />
+                      <button onClick={() => { setSystemPassword(newPasswordInput); alert("Код солигдлоо"); }} className="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs cursor-pointer">Хадгалах</button>
                     </div>
                   )}
                 </div>
 
-                {/* 📊 ДООД ТАЛЫН SHEET УДИРДЛАГА (Мэргэжлийн баруун товчны цэстэй) */}
+                {/* 📊 ДООД ТАЛЫН ОЛОН SHEET УДИРДЛАГА */}
                 {activeMenu === 'Сэлбэгийн бүртгэл' && (
                   <div className="mt-4 bg-white p-2.5 border border-slate-200 rounded-xl flex items-center flex-wrap gap-1 select-none shadow-sm">
-                    <span className="text-xs font-bold text-slate-400 px-2 uppercase tracking-wider">Хуудаснууд (Sheets):</span>
+                    <span className="text-xs font-bold text-slate-400 px-2 uppercase tracking-wider">Сар / Хуудаснууд:</span>
                     <div className="flex flex-wrap gap-1">
                       {Object.keys(sheets).sort().map((sheetName) => (
                         <button
@@ -548,54 +554,58 @@
                         </button>
                       ))}
                     </div>
-                    <button onClick={addNewMonthSheet} className="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 shadow-xs ml-auto cursor-pointer">➕ Шинэ сар нэмэх</button>
+                    <button onClick={addNewMonthSheet} className="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 shadow-xs ml-auto cursor-pointer">➕ Дараах сар (Sheet) нэмэх</button>
                   </div>
                 )}
               </main>
 
-              {/* 🖱️ УХААЛАГ БАРУУН ТОВЧНЫ ЦЭС (Нүд болон Хуудсанд зориулсан) */}
+              {/* 🖱️ БАРУУН ТОВЧНЫ УХААЛАГ EXCEL ЦЭС */}
               {contextMenu.visible && contextMenu.type === 'cell' && (
                 <div className="excel-context-menu" style={{ top: contextMenu.y, left: contextMenu.x }} onClick={(e) => e.stopPropagation()}>
                   <button onClick={() => insertRow('above')}>➕ Дээр мөр нэмэх</button>
                   <button onClick={() => insertRow('below')}>➕ Доор мөр нэмэх</button>
-                  <button onClick={deleteRow} className="text-red-600">❌ Энэ мөрийг устгах</button>
-                  <hr className="my-1 border-slate-200" />
-                  <button onClick={clearContents} className="text-slate-500">🗑️ Нүдний утгыг устгах</button>
+                  <button onClick={deleteRow} className="text-red-600">❌ Энэ мөрийг уустал устгах</button>
                 </div>
               )}
 
               {contextMenu.visible && contextMenu.type === 'sheet' && (
                 <div className="excel-context-menu" style={{ top: contextMenu.y, left: contextMenu.x }} onClick={(e) => e.stopPropagation()}>
-                  <button onClick={renameSheet}>📝 Хуудасны нэрийг өөрчлөх</button>
-                  <button onClick={deleteSheet} className="text-red-600 font-bold">🗑️ Хуудсыг бүрмөсөн устгах</button>
+                  <button onClick={renameSheet}>📝 Сар / Хуудасны нэр өөрчлөх</button>
+                  <button onClick={deleteSheet} className="text-red-600 font-bold">🗑️ Энэ сарыг бүрмөсөн устгах</button>
                 </div>
               )}
 
-              {/* ОРЛОГО / ЗАРЛАГЫН ЦОНХУУД */}
+              {/* ОРЛОГО АВАХ МОДАЛЬ ЦОНХ */}
               {isIncomingModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 text-xs">
-                  <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl">
-                    <h4 className="font-bold text-sm mb-3">📥 Орлого авах ({currentSheet})</h4>
-                    <input type="text" placeholder="Барааны нэр" required value={modalForm.name} onChange={e => setModalForm({...modalForm, name: e.target.value})} className="w-full border p-2 rounded-xl mb-2" />
-                    <input type="number" placeholder="Тоо ширхэг" required value={modalForm.qty} onChange={e => setModalForm({...modalForm, qty: e.target.value})} className="w-full border p-2 rounded-xl mb-3" />
+                  <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-3">
+                    <h4 className="font-bold text-sm">📥 Шинэ сэлбэгийн орлого авах ({currentSheet})</h4>
+                    <input type="text" placeholder="Сэлбэг хэрэгслийн нэрс" required value={modalForm.name} onChange={e => setModalForm({...modalForm, name: e.target.value})} className="w-full border p-2 rounded-xl" />
+                    <input type="text" placeholder="Марка, марк дугаар" value={modalForm.code} onChange={e => setModalForm({...modalForm, code: e.target.value})} className="w-full border p-2 rounded-xl" />
+                    <input type="text" placeholder="Хэмжих нэгж (ш, м, кг...)" value={modalForm.unit} onChange={e => setModalForm({...modalForm, unit: e.target.value})} className="w-full border p-2 rounded-xl" />
+                    <input type="number" placeholder="Эхний үлдэгдэл" value={modalForm.initial} onChange={e => setModalForm({...modalForm, initial: e.target.value})} className="w-full border p-2 rounded-xl" />
+                    <input type="number" placeholder="Орлого тоо" required value={modalForm.qty} onChange={e => setModalForm({...modalForm, qty: e.target.value})} className="w-full border p-2 rounded-xl" />
+                    <input type="text" placeholder="Авсан өгсөн тасаг цех" value={modalForm.extra} onChange={e => setModalForm({...modalForm, extra: e.target.value})} className="w-full border p-2 rounded-xl" />
                     <div className="flex gap-2 justify-end">
                       <button onClick={() => setIsIncomingModalOpen(false)} className="bg-slate-100 px-3 py-2 rounded-xl">Цуцлах</button>
-                      <button onClick={() => { setSheets({...sheets, [currentSheet]: [[modalForm.name, '---', modalForm.qty, '0', modalForm.qty, 'Бүртгэл'], ...matrix]}); setIsIncomingModalOpen(false); }} className="bg-blue-600 text-white px-3 py-2 rounded-xl font-bold">Орлогодох</button>
+                      <button onClick={() => { setSheets({...sheets, [currentSheet]: [[modalForm.name, modalForm.code || '---', modalForm.unit || 'ш', modalForm.initial || '0', modalForm.qty, '0', '0', modalForm.extra || 'Төв агуулах'], ...matrix]}); setIsIncomingModalOpen(false); }} className="bg-blue-600 text-white px-3 py-2 rounded-xl font-bold">Орлогодох</button>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* ЗАРЛАГЫН ЦОНХ */}
+              {/* ЗАРЛАГА ГАРГАХ МОДАЛЬ ЦОНХ */}
               {isOutgoingModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 text-xs">
-                  <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl">
-                    <h4 className="font-bold text-sm mb-3">📤 Зарлага гаргах ({currentSheet})</h4>
-                    <input type="text" placeholder="Барааны нэр" required value={modalForm.name} onChange={e => setModalForm({...modalForm, name: e.target.value})} className="w-full border p-2 rounded-xl mb-2" />
-                    <input type="number" placeholder="Тоо ширхэг" required value={modalForm.qty} onChange={e => setModalForm({...modalForm, qty: e.target.value})} className="w-full border p-2 rounded-xl mb-3" />
+                  <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-3">
+                    <h4 className="font-bold text-sm">📤 Сэлбэгийн зарлага гаргах ({currentSheet})</h4>
+                    <input type="text" placeholder="Сэлбэг хэрэгслийн нэрс" required value={modalForm.name} onChange={e => setModalForm({...modalForm, name: e.target.value})} className="w-full border p-2 rounded-xl" />
+                    <input type="text" placeholder="Марка, марк дугаар" value={modalForm.code} onChange={e => setModalForm({...modalForm, code: e.target.value})} className="w-full border p-2 rounded-xl" />
+                    <input type="number" placeholder="Зарлагадах тоо" required value={modalForm.qty} onChange={e => setModalForm({...modalForm, qty: e.target.value})} className="w-full border p-2 rounded-xl" />
+                    <input type="text" placeholder="Хүлээлгэж өгсөн тасаг цех" value={modalForm.extra} onChange={e => setModalForm({...modalForm, extra: e.target.value})} className="w-full border p-2 rounded-xl" />
                     <div className="flex gap-2 justify-end">
                       <button onClick={() => setIsOutgoingModalOpen(false)} className="bg-slate-100 px-3 py-2 rounded-xl">Цуцлах</button>
-                      <button onClick={() => { setSheets({...sheets, [currentSheet]: [[modalForm.name, '---', '0', modalForm.qty, '0', 'Тасаг'], ...matrix]}); setIsOutgoingModalOpen(false); }} className="bg-orange-600 text-white px-3 py-2 rounded-xl font-bold">Зарлагадах</button>
+                      <button onClick={() => { setSheets({...sheets, [currentSheet]: [[modalForm.name, modalForm.code || '---', 'ш', '0', '0', modalForm.qty, '0', modalForm.extra || 'Тасаг'], ...matrix]}); setIsOutgoingModalOpen(false); }} className="bg-orange-600 text-white px-3 py-2 rounded-xl font-bold">Зарлагадах</button>
                     </div>
                   </div>
                 </div>
