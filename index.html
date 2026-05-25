@@ -14,7 +14,25 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        const { useState } = React;
+
         function InventoryDashboard() {
+          // Идэвхтэй байгаа цэсийг удирдах төлөв
+          const [activeMenu, setActiveMenu] = useState('Хяналтын самбар');
+          
+          // Хайлтын үгийг хадгалах төлөв
+          const [searchTerm, setSearchTerm] = useState('');
+          
+          // Поп-ап (Modal) цонхны харагдацыг удирдах төлөв
+          const [isModalOpen, setIsModalOpen] = useState(false);
+
+          // Шинэ орлого нэмэх формын төлөвүүд
+          const [newName, setNewName] = useState('');
+          const [newCode, setNewCode] = useState('');
+          const [newQty, setNewQty] = useState('');
+          const [newSupplier, setNewSupplier] = useState('');
+
+          // Статистик мэдээлэл
           const stats = [
             { title: 'Нийт бараа', value: '1,248' },
             { title: 'Нийт үлдэгдэл', value: '15,842' },
@@ -22,17 +40,44 @@
             { title: 'Өнөөдрийн зарлага', value: '18' },
           ];
 
-          const recentIncoming = [
+          // Орлогын жагсаалтыг State болгох (шинээр нэмэгддэг байхаар)
+          const [recentIncoming, setRecentIncoming] = useState([
             { name: 'Пүрш', code: 'SPR-001', qty: 120, supplier: 'Блю Стар ХХК' },
             { name: 'Боолт M10', code: 'BLT-010', qty: 500, supplier: 'Техно Импекс' },
             { name: 'LED гэрэл 50W', code: 'LED-050', qty: 30, supplier: 'Электро Сервис' },
-          ];
+          ]);
 
           const recentOutgoing = [
             { name: 'Пүрш', code: 'SPR-001', qty: 20, department: 'Засварын хэсэг' },
             { name: 'Хошуувч', code: 'NOZ-005', qty: 5, department: 'Үйлдвэрлэл' },
             { name: 'Ажлын бээлий', code: 'GLV-002', qty: 10, department: 'Үйлдвэрлэл' },
           ];
+
+          // Шинэ орлого хадгалах функц
+          const handleAddIncoming = (e) => {
+            e.preventDefault();
+            if (!newName || !newCode || !newQty || !newSupplier) return alert('Бүх талбарыг бөглөнө үү!');
+
+            const newItem = {
+              name: newName,
+              code: newCode,
+              qty: parseInt(newQty),
+              supplier: newSupplier
+            };
+
+            setRecentIncoming([newItem, ...recentIncoming]); // Шинэ барааг жагсаалтын дээр нэмэх
+            setIsModalOpen(false); // Цонхыг хаах
+            
+            // Формыг цэвэрлэх
+            setNewName(''); setNewCode(''); setNewQty(''); setNewSupplier('');
+          };
+
+          // Хайлтаар орлогын хүснэгтийг шүүх логик
+          const filteredIncoming = recentIncoming.filter(item => 
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.supplier.toLowerCase().includes(searchTerm.toLowerCase())
+          );
 
           return (
             <div className="min-h-screen bg-slate-100 flex">
@@ -49,7 +94,11 @@
                     'Үлдэгдэл', 'ХАБЭА бүртгэл', 'Тайлан', 'Excel / ODS импорт', 
                     'Хэрэглэгчид', 'Тохиргоо'
                   ].map((item) => (
-                    <div key={item} className="p-3 rounded-xl hover:bg-slate-800 cursor-pointer transition">
+                    <div 
+                      key={item} 
+                      onClick={() => setActiveMenu(item)}
+                      className={`p-3 rounded-xl cursor-pointer transition ${activeMenu === item ? 'bg-blue-600 text-white font-medium' : 'hover:bg-slate-800 text-slate-300'}`}
+                    >
                       {item}
                     </div>
                   ))}
@@ -61,103 +110,158 @@
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                   <div>
-                    <h2 className="text-3xl font-bold text-slate-800">Хяналтын самбар</h2>
+                    <h2 className="text-3xl font-bold text-slate-800">{activeMenu}</h2>
                     <p className="text-slate-500 mt-1">Агуулахын бодит мэдээлэл</p>
                   </div>
                   <div className="flex gap-3 w-full md:w-auto">
-                    <input type="text" placeholder="Хайх..." className="px-4 py-3 rounded-xl border border-slate-300 w-full md:w-80" />
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-medium">
+                    <input 
+                      type="text" 
+                      placeholder="Нэр, кодоор хайх..." 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="px-4 py-3 rounded-xl border border-slate-300 w-full md:w-80 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                    />
+                    <button 
+                      onClick={() => setIsModalOpen(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-medium shadow-sm transition active:scale-95"
+                    >
                       + Шинэ орлого
                     </button>
                   </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-                  {stats.map((stat) => (
-                    <div key={stat.title} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                      <p className="text-slate-500 text-sm">{stat.title}</p>
-                      <h3 className="text-4xl font-bold mt-3 text-slate-800">{stat.value}</h3>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Inventory Section */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
-                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                    <div className="flex justify-between items-center mb-5">
-                      <h3 className="text-xl font-bold text-slate-800">Сүүлийн орлогууд</h3>
-                      <button className="text-blue-600 font-medium">Бүгдийг харах</button>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="text-left border-b border-slate-200">
-                            <th className="pb-3">Нэр</th>
-                            <th className="pb-3">Код</th>
-                            <th className="pb-3">Тоо</th>
-                            <th className="pb-3">Нийлүүлэгч</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {recentIncoming.map((item) => (
-                            <tr key={item.code} className="border-b border-slate-100">
-                              <td className="py-4">{item.name}</td>
-                              <td className="py-4">{item.code}</td>
-                              <td className="py-4">{item.qty}</td>
-                              <td className="py-4">{item.supplier}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                {/* Хэрэв өөр цэс сонгогдвол түр харуулах бичиг */}
+                {activeMenu !== 'Хяналтын самбар' ? (
+                  <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-500">
+                     {activeMenu} хуудас хөгжүүлэлтийн шатанд байна.
                   </div>
-
-                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                    <div className="flex justify-between items-center mb-5">
-                      <h3 className="text-xl font-bold text-slate-800">Сүүлийн зарлагууд</h3>
-                      <button className="text-blue-600 font-medium">Бүгдийг харах</button>
+                ) : (
+                  <>
+                    {/* Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                      {stats.map((stat) => (
+                        <div key={stat.title} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                          <p className="text-slate-500 text-sm">{stat.title}</p>
+                          <h3 className="text-4xl font-bold mt-3 text-slate-800">{stat.value}</h3>
+                        </div>
+                      ))}
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="text-left border-b border-slate-200">
-                            <th className="pb-3">Нэр</th>
-                            <th className="pb-3">Код</th>
-                            <th className="pb-3">Тоо</th>
-                            <th className="pb-3">Хэлтэс</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {recentOutgoing.map((item) => (
-                            <tr key={item.code} className="border-b border-slate-100">
-                              <td className="py-4">{item.name}</td>
-                              <td className="py-4">{item.code}</td>
-                              <td className="py-4">{item.qty}</td>
-                              <td className="py-4">{item.department}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Alerts */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                  <h3 className="text-xl font-bold text-slate-800 mb-5">Анхааруулга</h3>
-                  <div className="space-y-4">
-                    <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl">⚠️ LED гэрэл 50W үлдэгдэл багассан</div>
-                    <div className="bg-red-50 border border-red-200 p-4 rounded-xl">❌ Хошуувч дууссан байна</div>
-                    <div className="bg-green-50 border border-green-200 p-4 rounded-xl">✅ Өнөөдрийн backup амжилттай хийгдсэн</div>
-                  </div>
-                </div>
+                    {/* Inventory Section */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+                      {/* Сүүлийн орлогууд */}
+                      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                        <div className="flex justify-between items-center mb-5">
+                          <h3 className="text-xl font-bold text-slate-800">Сүүлийн орлогууд</h3>
+                          <button className="text-blue-600 font-medium hover:underline">Бүгдийг харах</button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="text-left border-b border-slate-200 text-slate-600">
+                                <th className="pb-3">Нэр</th>
+                                <th className="pb-3">Код</th>
+                                <th className="pb-3">Тоо</th>
+                                <th className="pb-3">Нийлүүлэгч</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredIncoming.length > 0 ? filteredIncoming.map((item, index) => (
+                                <tr key={index} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                                  <td className="py-4 font-medium text-slate-800">{item.name}</td>
+                                  <td className="py-4 text-slate-600">{item.code}</td>
+                                  <td className="py-4 font-semibold text-blue-600">+{item.qty}</td>
+                                  <td className="py-4 text-slate-600">{item.supplier}</td>
+                                </tr>
+                              )) : (
+                                <tr>
+                                  <td colSpan="4" className="text-center py-6 text-slate-400">Ийм бараа олдсонгүй.</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Сүүлийн зарлагууд */}
+                      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                        <div className="flex justify-between items-center mb-5">
+                          <h3 className="text-xl font-bold text-slate-800">Сүүлийн зарлагууд</h3>
+                          <button className="text-blue-600 font-medium hover:underline">Бүгдийг харах</button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="text-left border-b border-slate-200 text-slate-600">
+                                <th className="pb-3">Нэр</th>
+                                <th className="pb-3">Код</th>
+                                <th className="pb-3">Тоо</th>
+                                <th className="pb-3">Хэлтэс</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {recentOutgoing.map((item, index) => (
+                                <tr key={index} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                                  <td className="py-4 font-medium text-slate-800">{item.name}</td>
+                                  <td className="py-4 text-slate-600">{item.code}</td>
+                                  <td className="py-4 font-semibold text-orange-600">-{item.qty}</td>
+                                  <td className="py-4 text-slate-600">{item.department}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Alerts */}
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                      <h3 className="text-xl font-bold text-slate-800 mb-5">Анхааруулга</h3>
+                      <div className="space-y-4">
+                        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl">⚠️ LED гэрэл 50W үлдэгдэл багассан</div>
+                        <div className="bg-red-50 border border-red-200 p-4 rounded-xl">❌ Хошуувч дууссан байна</div>
+                        <div className="bg-green-50 border border-green-200 p-4 rounded-xl">✅ Өнөөдрийн backup амжилттай хийгдсэн</div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </main>
+
+              {/* +ШИНЭ ОРЛОГО НЭМЭХ ХАРАГДАЦ (MODAL POPUP) */}
+              {isModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+                  <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+                    <h3 className="text-xl font-bold text-slate-800 mb-4">Шинэ орлого бүртгэх</h3>
+                    <form onSubmit={handleAddIncoming} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">Сэлбэг, барааны нэр</label>
+                        <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} className="w-full border border-slate-300 rounded-xl px-4 py-2" placeholder="Жишээ: Ажлын бээлий" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">Дотоод код</label>
+                        <input type="text" value={newCode} onChange={(e) => setNewCode(e.target.value)} className="w-full border border-slate-300 rounded-xl px-4 py-2" placeholder="Жишээ: GLV-002" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">Тоо ширхэг</label>
+                        <input type="number" value={newQty} onChange={(e) => setNewQty(e.target.value)} className="w-full border border-slate-300 rounded-xl px-4 py-2" placeholder="0" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">Нийлүүлэгч компани</label>
+                        <input type="text" value={newSupplier} onChange={(e) => setNewSupplier(e.target.value)} className="w-full border border-slate-300 rounded-xl px-4 py-2" placeholder="Жишээ: Алтан Түлхүүр ХХК" />
+                      </div>
+                      
+                      <div className="flex gap-3 pt-2 justify-end">
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-700 font-medium">Цуцлах</button>
+                        <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium">Хадгалах</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           );
         }
 
-        // Үндсэн Хуудас руу React компонентыг дүрслэх (Render) хэсэг
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<InventoryDashboard />);
     </script>
