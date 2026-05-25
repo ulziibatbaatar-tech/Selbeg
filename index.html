@@ -3,71 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Агуулах & ХАБЭА-н Нэгдсэн Систем</title>
+    <title>Нэгдсэн Ухаалаг Хүснэгтийн Систем</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        .excel-table th, .excel-table td {
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .excel-table input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 2px;
+        }
+        .excel-table input:focus {
+            background-color: #eff6ff;
+            box-shadow: inset 0 0 0 2px #3b82f6;
+        }
+    </style>
 </head>
 <body class="bg-slate-100">
 
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
 
-        function InventoryDashboard() {
-          const [activeMenu, setActiveMenu] = useState('Хяналтын самбар');
+        function ExcelApp() {
+          const [activeMenu, setActiveMenu] = useState('Агуулахын Бүртгэл');
           const [searchTerm, setSearchTerm] = useState('');
-          
-          // Модаль цонхнуудын төлөв
-          const [isIncomingModalOpen, setIsIncomingModalOpen] = useState(false);
-          const [isOutgoingModalOpen, setIsOutgoingModalOpen] = useState(false);
-          const [isHseModalOpen, setIsHseModalOpen] = useState(false);
 
-          // 1. СЭЛБЭГ / ОРЛОГЫН ДАТА (Барааны үндсэн бааз)
-          const [recentIncoming, setRecentIncoming] = useState([
-            { name: 'Пүрш', code: 'SPR-001', qty: 120, supplier: 'Блю Стар ХХК', date: '2026-05-25' },
-            { name: 'Боолт M10', code: 'BLT-010', qty: 500, supplier: 'Техно Импекс', date: '2026-05-24' },
-            { name: 'LED гэрэл 50W', code: 'LED-050', qty: 30, supplier: 'Электро Сервис', date: '2026-05-23' },
+          // 1. АГУУЛАХЫН СЭЛБЭГ (Sheet 1 Загвар)
+          const [warehouseHeaders, setWarehouseHeaders] = useState(['А багана (Нэр)', 'B багана (Код)', 'C багана (Орлого Тоо)', 'D багана (Зарлага Тоо)', 'E багана (Үлдэгдэл)', 'F багана (Нийлүүлэгч)']);
+          const [warehouseData, setWarehouseData] = useState([
+            ['Пүрш', 'SPR-001', '120', '20', '100', 'Блю Стар ХХК'],
+            ['Боолт M10', 'BLT-010', '500', '50', '450', 'Техно Импекс'],
+            ['LED гэрэл 50W', 'LED-050', '30', '0', '30', 'Электро Сервис'],
+            ['Ажлын бээлий', 'GLV-002', '200', '10', '190', 'Дотоод Сорс'],
           ]);
 
-          // 2. ЗАРЛАГЫН ДАТА
-          const [recentOutgoing, setRecentOutgoing] = useState([
-            { name: 'Пүрш', code: 'SPR-001', qty: 20, department: 'Засварын хэсэг', date: '2026-05-25' },
-            { name: 'Боолт M10', code: 'BLT-010', qty: 50, department: 'Үйлдвэрлэл', date: '2026-05-25' },
+          // 2. ХАБЭА БҮРТГЭЛ (Sheet 2 Загвар)
+          const [hseHeaders, setHseHeaders] = useState(['А багана (Зааварчилгааны Сэдэв)', 'B багана (Ангилал)', 'C багана (Дотоод Код)', 'D багана (Хамаарах Хэлтэс)']);
+          const [hseData, setHseData] = useState([
+            ['Оёдолын машины аюулгүй ажиллагаа', 'Ерөнхий зааварчилгаа', 'HSE-001', 'Оёдолын тасаг'],
+            ['Агуулахын өргөгч крантай ажиллах журам', 'Тусгай зааварчилгаа', 'HSE-002', 'Агуулах хэсэг'],
+            ['Гал түймрийн аюулаас урьдчилан сэргийлэх', 'Гал унтраах заавар', 'HSE-003', 'Нийт ажилчид'],
           ]);
 
-          // 3. ХАБЭА БҮРТГЭЛИЙН ДАТА (Excel-ийн 2 шээт шиг жагсаалт бүтэцтэй)
-          const [hseRecords, setHseRecords] = useState([
-            { id: 1, topic: 'Оёдолын машины аюулгүй ажиллагаа', type: 'Ерөнхий зааварчилгаа', code: 'HSE-001', dept: 'Оёдолын тасаг' },
-            { id: 2, topic: 'Агуулахын өргөгч крантай ажиллах журам', type: 'Тусгай зааварчилгаа', code: 'HSE-002', dept: 'Агуулах хэсэг' },
-            { id: 3, topic: 'Гал түймрийн аюулаас урьдчилан сэргийлэх', type: 'Гал унтраах заавар', code: 'HSE-003', dept: 'Нийт ажилчид' },
-          ]);
-
-          // Хэрэглэгчид ба Тохиргоо дата
+          // Хэрэглэгчид ба Тохиргоо хуудасны энгийн өгөгдөл
           const [users, setUsers] = useState([
-            { name: 'Өлзийбат Баатар', role: 'Админ / Үйлдвэрийн дарга', email: 'ulziibat@bestshoes.mn', phone: '9911xxxx' },
-            { name: 'А. Наран', role: 'Агуулахын нярав', email: 'naran@bestshoes.mn', phone: '8811xxxx' },
+            { name: 'Өлзийбат Баатар', role: 'Админ / Үйлдвэрийн дарга', email: 'ulziibat@bestshoes.mn' },
+            { name: 'А. Наран', role: 'Агуулахын нярав', email: 'naran@bestshoes.mn' }
           ]);
 
-          // Шинэ дата нэмэх түр зуурын форм төлөвүүд
-          const [form, setForm] = useState({ name: '', code: '', qty: '', supplier: '', department: '', hseTopic: '', hseType: '', hseDept: '' });
+          // Автомат Үлдэгдэл бодох томьёо (C баганаас D баганыг хасах)
+          useEffect(() => {
+            const updated = warehouseData.map(row => {
+              const incoming = parseFloat(row[2]) || 0;
+              const outgoing = parseFloat(row[3]) || 0;
+              const remain = incoming - outgoing;
+              const newRow = [...row];
+              newRow[4] = remain.toString(); // E баганыг автоматаар шинэчилнэ
+              return newRow;
+            });
+            // Хэрэв утга өөрчлөгдсөн бол infinite loop-оос сэргийлж шалгана
+            if (JSON.stringify(updated) !== JSON.stringify(warehouseData)) {
+              setWarehouseData(updated);
+            }
+          }, [warehouseData]);
 
-          // Төлөвүүдийг тооцоолох (Орлогоос зарлагыг хасах логик)
-          const totalIncomingQty = recentIncoming.reduce((sum, item) => sum + Number(item.qty || 0), 0);
-          const totalOutgoingQty = recentOutgoing.reduce((sum, item) => sum + Number(item.qty || 0), 0);
-          const currentStockQty = totalIncomingQty - totalOutgoingQty;
-
-          const stats = [
-            { title: 'Нийт нэр төрөл', value: recentIncoming.length },
-            { title: 'Бодит үлдэгдэл (ш)', value: currentStockQty.toLocaleString() },
-            { title: 'Нийт Орлого (ш)', value: totalIncomingQty.toLocaleString() },
-            { title: 'Нийт Зарлага (ш)', value: totalOutgoingQty.toLocaleString() },
-          ];
-
-          // 📂 EXCEL / ODS УНШИХ УХААЛАГ ФУНКЦ (Бүх хуудсыг уншина)
+          // 📁 EXCEL / ODS ФАЙЛЫГ ШУУД ХҮСНЭГТ БОЛГОЖ УНШИХ
           const handleFileUpload = (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -78,368 +91,280 @@
                 const bstr = evt.target.result;
                 const wb = XLSX.read(bstr, { type: 'binary' });
                 
-                // 1. Эхний хуудаснаас Агуулахын сэлбэгийг унших
-                const s1Name = wb.SheetNames[0];
-                const s1Raw = XLSX.utils.sheet_to_json(wb.Sheets[s1Name], { header: 1 });
-                const importedIncoming = [];
-                
-                s1Raw.forEach((row, i) => {
-                  if (i === 0 || !row || row.length === 0) return;
-                  const name = row[0]?.toString().trim();
-                  const code = row[1]?.toString().trim() || '---';
-                  const qty = parseInt(row[2]) || 0;
-                  const supplier = row[3]?.toString().trim() || 'Файлаас импортолсон';
-                  if (name && name !== "Нэр" && name !== "Нийт") {
-                    importedIncoming.push({ name, code, qty, supplier, date: new Date().toISOString().split('T')[0] });
+                // Sheet 1: Агуулах унших
+                if (wb.SheetNames.length > 0) {
+                  const ws1 = wb.Sheets[wb.SheetNames[0]];
+                  const data1 = XLSX.utils.sheet_to_json(ws1, { header: 1 });
+                  if (data1.length > 0) {
+                    setWarehouseHeaders(data1[0].map((h, idx) => h || `Багана ${idx + 1}`));
+                    setWarehouseData(data1.slice(1).filter(r => r.length > 0));
                   }
-                });
-
-                // 2. Хоёр дахь хуудаснаас ХАБЭА-н зааварчилгааг унших (хэрэв байгаа бол)
-                const importedHse = [];
-                if (wb.SheetNames.length > 1) {
-                  const s2Name = wb.SheetNames[1];
-                  const s2Raw = XLSX.utils.sheet_to_json(wb.Sheets[s2Name], { header: 1 });
-                  s2Raw.forEach((row, i) => {
-                    if (i === 0 || !row || row.length === 0) return;
-                    const topic = row[0]?.toString().trim();
-                    const type = row[1]?.toString().trim() || 'Ерөнхий';
-                    const code = row[2]?.toString().trim() || `HSE-00${i}`;
-                    const dept = row[3]?.toString().trim() || 'Үйлдвэрлэл';
-                    if (topic && topic !== "Сэдэв" && topic !== "Нэр") {
-                      importedHse.push({ id: Date.now() + i, topic, type, code, dept });
-                    }
-                  });
                 }
 
-                if (importedIncoming.length > 0) setRecentIncoming([...importedIncoming, ...recentIncoming]);
-                if (importedHse.length > 0) setHseRecords([...importedHse, ...hseRecords]);
+                // Sheet 2: ХАБЭА унших
+                if (wb.SheetNames.length > 1) {
+                  const ws2 = wb.Sheets[wb.SheetNames[1]];
+                  const data2 = XLSX.utils.sheet_to_json(ws2, { header: 1 });
+                  if (data2.length > 0) {
+                    setHseHeaders(data2[0].map((h, idx) => h || `Багана ${idx + 1}`));
+                    setHseData(data2.slice(1).filter(r => r.length > 0));
+                  }
+                }
 
-                alert(`Амжилттай уншлаа! Сэлбэг: ${importedIncoming.length} ш, ХАБЭА заавар: ${importedHse.length} ш нэмэгдлээ.`);
-                setActiveMenu('Хяналтын самбар');
+                alert("Excel файлыг амжилттай уншиж хууллаа!");
+                setActiveMenu('Агуулахын Бүртгэл');
               } catch (error) {
-                alert("Файлыг уншихад алдаа гарлаа. Форматыг шалгана уу.");
+                alert("Файл уншихад алдаа гарлаа. Зөв формат эсэхийг шалгана уу.");
               }
             };
             reader.readAsBinaryString(file);
           };
 
-          // Нэмэх, Хасах (Зарлага), ХАБЭА бүртгэх функцууд
-          const handleAddIncoming = (e) => {
-            e.preventDefault();
-            if (!form.name || !form.qty) return alert('Нэр болон Тоо ширхэгийг заавал бөглөнө үү!');
-            setRecentIncoming([{ name: form.name, code: form.code || '---', qty: parseInt(form.qty), supplier: form.supplier || 'Тодорхойгүй', date: new Date().toISOString().split('T')[0] }, ...recentIncoming]);
-            setIsIncomingModalOpen(false);
-            setForm({ name: '', code: '', qty: '', supplier: '', department: '', hseTopic: '', hseType: '', hseDept: '' });
+          // 💾 ЭКСПОРТЛОХ (Одоогийн хүснэгтийг буцаагаад Excel болгож татах)
+          const exportToExcel = () => {
+            const wb = XLSX.utils.book_new();
+            
+            const ws1 = XLSX.utils.aoa_to_sheet([warehouseHeaders, ...warehouseData]);
+            XLSX.utils.book_append_sheet(wb, ws1, "Агуулахын сэлбэг");
+
+            const ws2 = XLSX.utils.aoa_to_sheet([hseHeaders, ...hseData]);
+            XLSX.utils.book_append_sheet(wb, ws2, "ХАБЭА Бүртгэл");
+
+            XLSX.writeFile(wb, "Агуулах_ХАБЭА_Шинэчилсэн.xlsx");
           };
 
-          const handleAddOutgoing = (e) => {
-            e.preventDefault();
-            if (!form.name || !form.qty) return alert('Нэр болон Зарлагадах тоог оруулна уу!');
-            setRecentOutgoing([{ name: form.name, code: form.code || '---', qty: parseInt(form.qty), department: form.department || 'Үйлдвэрлэл', date: new Date().toISOString().split('T')[0] }, ...recentOutgoing]);
-            setIsOutgoingModalOpen(false);
-            setForm({ name: '', code: '', qty: '', supplier: '', department: '', hseTopic: '', hseType: '', hseDept: '' });
-          };
-
-          const handleAddHse = (e) => {
-            e.preventDefault();
-            if (!form.hseTopic) return alert('Зааварчилгааны сэдвийг оруулна уу!');
-            setHseRecords([{ id: Date.now(), topic: form.hseTopic, type: form.hseType || 'Ерөнхий зааварчилгаа', code: form.code || 'HSE-NEW', dept: form.hseDept || 'Нийт ажилчид' }, ...hseRecords]);
-            setIsHseModalOpen(false);
-            setForm({ name: '', code: '', qty: '', supplier: '', department: '', hseTopic: '', hseType: '', hseDept: '' });
-          };
-
-          const handleDeleteHse = (id) => {
-            if (confirm('Энэхүү ХАБЭА-н бүртгэлийг устгахдаа итгэлтэй байна уу?')) {
-              setHseRecords(hseRecords.filter(item => item.id !== id));
+          // 📝 НҮДНИЙ УТГА ӨӨРЧЛӨХ (Жишээ нь Excel шиг шууд бичих)
+          const handleCellChange = (value, rowIndex, colIndex, type) => {
+            if (type === 'warehouse') {
+              const newData = [...warehouseData];
+              newData[rowIndex][colIndex] = value;
+              setWarehouseData(newData);
+            } else {
+              const newData = [...hseData];
+              newData[rowIndex][colIndex] = value;
+              setHseData(newData);
             }
           };
 
-          // Шүүлтүүрийн ухаалаг систем
-          const filterData = (list) => {
-            return list.filter(item => {
-              const s = searchTerm.toLowerCase().trim();
-              if (!s) return true;
-              return (
-                item.name?.toLowerCase().includes(s) || item.code?.toLowerCase().includes(s) ||
-                item.supplier?.toLowerCase().includes(s) || item.department?.toLowerCase().includes(s) ||
-                item.topic?.toLowerCase().includes(s) || item.type?.toLowerCase().includes(s) || item.dept?.toLowerCase().includes(s)
-              );
-            });
+          // ➕ МӨР НЭМЭХ
+          const addRow = (type) => {
+            if (type === 'warehouse') {
+              setWarehouseData([...warehouseData, Array(warehouseHeaders.length).fill('')]);
+            } else {
+              setHseData([...hseData, Array(hseHeaders.length).fill('')]);
+            }
+          };
+
+          // ➖ МӨР ХАСАХ (Хамгийн сүүлийн мөр)
+          const removeRow = (type) => {
+            if (type === 'warehouse') {
+              if (warehouseData.length > 1) setWarehouseData(warehouseData.slice(0, -1));
+            } else {
+              if (hseData.length > 1) setHseData(hseData.slice(0, -1));
+            }
+          };
+
+          // 📊 ТАЙЛАН БОДОХ СИСТЕМ (Бодит Excel тооцоолол)
+          const totalIncoming = warehouseData.reduce((sum, r) => sum + (parseFloat(r[2]) || 0), 0);
+          const totalOutgoing = warehouseData.reduce((sum, r) => sum + (parseFloat(r[3]) || 0), 0);
+          const totalStock = warehouseData.reduce((sum, r) => sum + (parseFloat(r[4]) || 0), 0);
+
+          // Шүүлтүүр
+          const filterRows = (rows) => {
+            return rows.filter(row => 
+              row.some(cell => cell?.toString().toLowerCase().includes(searchTerm.toLowerCase().trim()))
+            );
           };
 
           return (
-            <div className="min-h-screen bg-slate-100 flex">
+            <div className="min-h-screen bg-slate-100 flex font-sans antialiased text-slate-800">
+              
               {/* Sidebar */}
-              <aside className="w-72 bg-slate-900 text-white p-6 hidden md:block shadow-xl">
-                <div className="mb-8">
-                  <h1 className="text-2xl font-bold tracking-wider text-blue-400">BEST SHOES</h1>
-                  <p className="text-slate-400 text-xs mt-1">Агуулах & ХАБЭА-н Нэгдсэн систем</p>
+              <aside className="w-64 bg-slate-900 text-white flex flex-col shadow-xl select-none">
+                <div className="p-5 border-b border-slate-800 bg-slate-950">
+                  <h1 className="text-xl font-bold tracking-wider text-blue-400">BEST SHOES</h1>
+                  <p className="text-slate-500 text-xs mt-1">Excel Ухаалаг Систем v2.0</p>
                 </div>
-                <nav className="space-y-1.5">
-                  {[
-                    { name: 'Хяналтын самбар', icon: '📊' },
-                    { name: 'Сэлбэгийн бүртгэл', icon: '🔧' },
-                    { name: 'Орлого', icon: '📥' },
-                    { name: 'Зарлага', icon: '📤' },
-                    { name: 'Үлдэгдэл', icon: '📦' },
-                    { name: 'ХАБЭА бүртгэл', icon: '🛡️' },
-                    { name: 'Тайлан', icon: '📈' },
-                    { name: 'Excel / ODS импорт', icon: '📁' },
-                    { name: 'Хэрэглэгчид', icon: '👥' },
-                    { name: 'Тохиргоо', icon: '⚙️' }
-                  ].map((item) => (
+                <nav className="flex-1 p-4 space-y-1">
+                  {['Агуулахын Бүртгэл', 'ХАБЭА бүртгэл', 'Бодит Тайлан', 'Excel / ODS импорт', 'Хэрэглэгчид', 'Тохиргоо'].map((menu) => (
                     <div 
-                      key={item.name} 
-                      onClick={() => setActiveMenu(item.name)}
-                      className={`p-3 rounded-xl cursor-pointer transition flex items-center gap-3 text-sm ${activeMenu === item.name ? 'bg-blue-600 text-white font-medium shadow-md' : 'hover:bg-slate-800 text-slate-300'}`}
+                      key={menu} 
+                      onClick={() => setActiveMenu(menu)}
+                      className={`p-3 rounded-xl cursor-pointer text-sm transition font-medium flex items-center gap-3 ${activeMenu === menu ? 'bg-blue-600 text-white shadow-md' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}
                     >
-                      <span>{item.icon}</span><span>{item.name}</span>
+                      <span>{menu === 'Агуулахын Бүртгэл' ? '📦' : menu === 'ХАБЭА бүртгэл' ? '🛡️' : menu === 'Бодит Тайлан' ? '📈' : menu === 'Excel / ODS импорт' ? '📁' : '⚙️'}</span>
+                      {menu}
                     </div>
                   ))}
                 </nav>
+                <div className="p-4 border-t border-slate-800">
+                  <button onClick={exportToExcel} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center gap-2">
+                    💾 Excel татаж авах
+                  </button>
+                </div>
               </aside>
 
-              {/* Main Area */}
-              <main className="flex-1 p-6 overflow-y-auto">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+              {/* Үндсэн Ажлын Талбар */}
+              <main className="flex-1 flex flex-col overflow-hidden">
+                
+                {/* Дээд Навигаци */}
+                <header className="bg-white border-b border-slate-200 p-4 px-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-800">{activeMenu}</h2>
-                    <p className="text-slate-400 text-xs mt-0.5">Үйлдвэрийн дотоод хяналтын бааз</p>
+                    <h2 className="text-xl font-bold text-slate-900">{activeMenu}</h2>
+                    <p className="text-slate-400 text-xs">Нүдэн дээр шууд дараад утгыг өөрчилж болно (Ухаалаг систем)</p>
                   </div>
-                  <div className="flex gap-2 w-full md:w-auto">
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
                     <input 
                       type="text" 
-                      placeholder="Эндээс хайна уу..." 
+                      placeholder="Хүснэгтээс хайх..." 
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="px-4 py-2 rounded-xl border border-slate-300 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-60"
+                      className="px-4 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-56"
                     />
-                    {activeMenu === 'ХАБЭА бүртгэл' ? (
-                      <button onClick={() => setIsHseModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition">+ Шинэ заавар</button>
-                    ) : (
-                      <div className="flex gap-1">
-                        <button onClick={() => setIsIncomingModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition">+ Орлого</button>
-                        <button onClick={() => setIsOutgoingModalOpen(true)} className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition">- Зарлага</button>
-                      </div>
-                    )}
                   </div>
-                </div>
+                </header>
 
-                {/* 1. ХЯНАЛТЫН САМБАР */}
-                {activeMenu === 'Хяналтын самбар' && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-                      {stats.map((s) => (
-                        <div key={s.title} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                          <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">{s.title}</p>
-                          <h3 className="text-2xl font-bold mt-2 text-slate-800">{s.value}</h3>
+                {/* Хүснэгтүүд Харагдах Хэсэг */}
+                <div className="flex-1 p-6 overflow-auto">
+
+                  {/* 1. АГУУЛАХЫН СЭЛБЭГ ХҮСНЭГТ */}
+                  {activeMenu === 'Агуулахын Бүртгэл' && (
+                    <div className="space-y-4">
+                      <div className="flex gap-2">
+                        <button onClick={() => addRow('warehouse')} className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-lg border border-blue-200 transition">+ Мөр нэмэх</button>
+                        <button onClick={() => removeRow('warehouse')} className="bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 transition">- Мөр хасах</button>
+                      </div>
+
+                      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full excel-table text-left border-collapse">
+                            <thead className="bg-slate-50 text-slate-600 select-none">
+                              <tr>
+                                {warehouseHeaders.map((h, idx) => (
+                                  <th key={idx} className="font-semibold text-slate-700 bg-slate-100 border border-slate-300">{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filterRows(warehouseData).map((row, rIdx) => (
+                                <tr key={rIdx} className="hover:bg-slate-50/50 transition">
+                                  {row.map((cell, cIdx) => (
+                                    <td key={cIdx} className={cIdx === 4 ? "bg-slate-50 font-bold text-blue-600" : ""}>
+                                      <input 
+                                        type="text" 
+                                        value={cell || ''} 
+                                        disabled={cIdx === 4} // Үлдэгдэл багана автоматаар бодогдох тул цоожилно
+                                        onChange={(e) => handleCellChange(e.target.value, rIdx, cIdx, 'warehouse')}
+                                      />
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                        <h4 className="font-bold text-slate-800 mb-3 text-base">Сүүлийн орлогуудын хяналт</h4>
-                        <table className="w-full text-xs">
-                          <thead><tr className="text-left text-slate-400 border-b pb-2"><th>Бараа</th><th>Тоо</th><th>Огноо</th></tr></thead>
-                          <tbody>{filterData(recentIncoming).slice(0, 4).map((x, i) => (<tr key={i} className="border-b border-slate-50"><td className="py-2.5 font-medium">{x.name}</td><td className="text-blue-600 font-bold">+{x.qty}</td><td className="text-slate-400">{x.date}</td></tr>))}</tbody>
-                        </table>
-                      </div>
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                        <h4 className="font-bold text-slate-800 mb-3 text-base">Сүүлийн зарлагуудын хяналт</h4>
-                        <table className="w-full text-xs">
-                          <thead><tr className="text-left text-slate-400 border-b pb-2"><th>Бараа</th><th>Тоо</th><th>Хэлтэс</th></tr></thead>
-                          <tbody>{filterData(recentOutgoing).slice(0, 4).map((x, i) => (<tr key={i} className="border-b border-slate-50"><td className="py-2.5 font-medium">{x.name}</td><td className="text-orange-600 font-bold">-{x.qty}</td><td className="text-slate-500">{x.department}</td></tr>))}</tbody>
-                        </table>
                       </div>
                     </div>
-                  </>
-                )}
+                  )}
 
-                {/* 2. СЭЛБЭГИЙН БҮРТГЭЛ & ҮЛДЭГДЭЛ */}
-                {(activeMenu === 'Сэлбэгийн бүртгэл' || activeMenu === 'Үлдэгдэл') && (
-                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                    <table className="w-full text-sm text-left">
-                      <thead>
-                        <tr className="border-b text-slate-400 text-xs">
-                          <th className="pb-3">Нэр төрөл</th><th className="pb-3">Материалын код</th><th className="pb-3">Үлдэгдэл хэмжээ</th><th className="pb-3">Агуулахын төлөв</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filterData(recentIncoming).map((item, i) => {
-                          const outQty = recentOutgoing.filter(o => o.code === item.code || o.name === item.name).reduce((s, o) => s + o.qty, 0);
-                          const current = item.qty - outQty;
-                          return (
-                            <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50">
-                              <td className="py-3 font-medium text-slate-800">{item.name}</td>
-                              <td className="text-slate-500">{item.code}</td>
-                              <td className="font-bold text-slate-700">{current} ш</td>
-                              <td>{current <= 0 ? <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-medium">Дууссан</span> : current < 30 ? <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-medium">Багассан</span> : <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium">Хэвийн</span>}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* 3. ОРЛОГО */}
-                {activeMenu === 'Орлого' && (
-                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                    <table className="w-full text-sm text-left">
-                      <thead><tr className="border-b text-slate-400 text-xs"><th className="pb-3">Бараа</th><th>Код</th><th>Орсон тоо</th><th>Нийлүүлэгч</th><th>Огноо</th></tr></thead>
-                      <tbody>{filterData(recentIncoming).map((x, i) => (<tr key={i} className="border-b border-slate-50"><td className="py-3 font-medium">{x.name}</td><td>{x.code}</td><td className="text-blue-600 font-bold">+{x.qty}</td><td>{x.supplier}</td><td className="text-slate-400">{x.date}</td></tr>))}</tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* 4. ЗАРЛАГА */}
-                {activeMenu === 'Зарлага' && (
-                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                    <table className="w-full text-sm text-left">
-                      <thead><tr className="border-b text-slate-400 text-xs"><th className="pb-3">Бараа</th><th>Код</th><th>Зарлагадсан тоо</th><th>Хүлээн авсан хэлтэс</th><th>Огноо</th></tr></thead>
-                      <tbody>{filterData(recentOutgoing).map((x, i) => (<tr key={i} className="border-b border-slate-50"><td className="py-3 font-medium">{x.name}</td><td>{x.code}</td><td className="text-orange-600 font-bold">-{x.qty}</td><td>{x.department}</td><td className="text-slate-400">{x.date}</td></tr>))}</tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* 5. ХАБЭА БҮРТГЭЛ (Сэлбэгийн бүртгэл шиг ажиллана, устгах үйлдэлтэй) */}
-                {activeMenu === 'ХАБЭА бүртгэл' && (
-                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                    <div className="mb-4">
-                      <h4 className="font-bold text-slate-800 text-base">ХАБЭА-н зааварчилгаа, дүрмийн сан</h4>
-                      <p className="text-slate-400 text-xs mt-0.5">Файлаас уншигдсан болон гараар бүртгэсэн нийт зааварчилгааны жагсаалт</p>
-                    </div>
-                    <table className="w-full text-sm text-left">
-                      <thead>
-                        <tr className="border-b text-slate-400 text-xs">
-                          <th className="pb-3">Үйлдвэрийн зааварчилгааны сэдэв</th><th className="pb-3">Ангилал</th><th className="pb-3">Дотоод код</th><th className="pb-3">Хамаарах тасаг хэлтэс</th><th className="pb-3 text-center">Үйлдэл</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filterData(hseRecords).map((x) => (
-                          <tr key={x.id} className="border-b border-slate-50 hover:bg-slate-50">
-                            <td className="py-3 font-medium text-slate-800">{x.topic}</td>
-                            <td className="text-slate-600"><span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs">{x.type}</span></td>
-                            <td className="text-slate-500 font-mono">{x.code}</td>
-                            <td className="text-slate-600 font-medium">{x.dept}</td>
-                            <td className="py-3 text-center">
-                              <button onClick={() => handleDeleteHse(x.id)} className="text-red-500 hover:text-red-700 font-medium text-xs border border-red-200 bg-red-50 px-2 py-1 rounded-xl transition">Устгах</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* 6. ТАЙЛАН */}
-                {activeMenu === 'Tайлан' || activeMenu === 'Тайлан' ? (
-                  <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
-                    <h4 className="font-bold text-slate-800 text-base">Агуулах & ХАБЭА гүйлгээний аналитик тайлан</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
-                        <p className="text-xs text-blue-600 font-medium uppercase">Орлогын нийт хөдөлгөөн</p>
-                        <h5 className="text-2xl font-bold mt-1 text-blue-900">{recentIncoming.length} удаа</h5>
+                  {/* 2. ХАБЭА БҮРТГЭЛ */}
+                  {activeMenu === 'ХАБЭА бүртгэл' && (
+                    <div className="space-y-4">
+                      <div className="flex gap-2">
+                        <button onClick={() => addRow('hse')} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-200 transition">+ Мөр нэмэх</button>
+                        <button onClick={() => removeRow('hse')} className="bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 transition">- Мөр хасах</button>
                       </div>
-                      <div className="p-4 bg-orange-50/50 border border-orange-100 rounded-xl">
-                        <p className="text-xs text-orange-600 font-medium uppercase">Зарлагын нийт хөдөлгөөн</p>
-                        <h5 className="text-2xl font-bold mt-1 text-orange-900">{recentOutgoing.length} удаа</h5>
-                      </div>
-                      <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl">
-                        <p className="text-xs text-emerald-600 font-medium uppercase">Бүртгэлтэй ХАБЭА заавар</p>
-                        <h5 className="text-2xl font-bold mt-1 text-emerald-900">{hseRecords.length} сэдэв</h5>
+
+                      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full excel-table text-left border-collapse">
+                            <thead className="bg-slate-50 text-slate-600 select-none">
+                              <tr>
+                                {hseHeaders.map((h, idx) => (
+                                  <th key={idx} className="font-semibold text-slate-700 bg-slate-100 border border-slate-300">{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filterRows(hseData).map((row, rIdx) => (
+                                <tr key={rIdx} className="hover:bg-slate-50/50 transition">
+                                  {row.map((cell, cIdx) => (
+                                    <td key={cIdx}>
+                                      <input 
+                                        type="text" 
+                                        value={cell || ''} 
+                                        onChange={(e) => handleCellChange(e.target.value, rIdx, cIdx, 'hse')}
+                                      />
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : null}
+                  )}
 
-                {/* 7. EXCEL / ODS ИМПОРТ */}
-                {activeMenu === 'Excel / ODS импорт' && (
-                  <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-xl mx-auto text-center">
-                    <h3 className="text-lg font-bold text-slate-800 mb-1">Мэргэжлийн ODS / Excel файл уншуулах</h3>
-                    <p className="text-xs text-slate-400 mb-6">Энэхүү модуль нь файлын хуудас 1-ээс сэлбэгийн датаг, хуудас 2-оос ХАБЭА-н зааврыг зэрэг уншина.</p>
-                    <div className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-10 bg-slate-50 relative cursor-pointer transition">
-                      <input type="file" accept=".xlsx, .xls, .ods" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                      <span className="text-3xl block mb-2">📁</span>
-                      <p className="text-sm font-medium text-slate-700">Файлаа сонгох эсвэл энд чирнэ үү</p>
+                  {/* 3. БОДИТ ТАЙЛАН */}
+                  {activeMenu === 'Бодит Тайлан' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Нийт Орлого (Бараа авалт)</p>
+                        <h3 className="text-3xl font-bold mt-2 text-blue-600">{totalIncoming.toLocaleString()} ш</h3>
+                      </div>
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Нийт Зарлага (Үйлдвэрт гарсан)</p>
+                        <h3 className="text-3xl font-bold mt-2 text-orange-600">{totalOutgoing.toLocaleString()} ш</h3>
+                      </div>
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Бодит Хөрөнгийн Үлдэгдэл</p>
+                        <h3 className="text-3xl font-bold mt-2 text-emerald-600">{totalStock.toLocaleString()} ш</h3>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* 8. ХЭРЭГЛЭГЧИД */}
-                {activeMenu === 'Хэрэглэгчид' && (
-                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                    <table className="w-full text-sm text-left">
-                      <thead><tr className="border-b text-slate-400 text-xs"><th className="pb-3">Нэр</th><th>Албан тушаал</th><th>И-мэйл хаяг</th><th>Утас</th></tr></thead>
-                      <tbody>{users.map((u, i) => (<tr key={i} className="border-b border-slate-50"><td className="py-3 font-medium">{u.name}</td><td><span className="bg-blue-50 text-blue-700 font-medium text-xs px-2 py-0.5 rounded">{u.role}</span></td><td>{u.email}</td><td>{u.phone}</td></tr>))}</tbody>
-                    </table>
-                  </div>
-                )}
-
-                {/* 9. ТОХИРГОО */}
-                {activeMenu === 'Тохиргоо' && (
-                  <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-md">
-                    <h4 className="font-bold text-slate-800 mb-4 text-base">Үйлдвэрийн системийн тохиргоо</h4>
-                    <div className="space-y-3 text-sm">
-                      <div><label className="text-slate-400 text-xs block mb-1">Байгууллагын нэр</label><input type="text" defaultValue="Best Shoes LLC" className="w-full border p-2 rounded-xl bg-slate-50" disabled /></div>
-                      <div><label className="text-slate-400 text-xs block mb-1">Программын төлөв</label><input type="text" defaultValue="Бүрэн ажиллагаатай (Лиценз идэвхтэй)" className="w-full border p-2 rounded-xl bg-slate-50 text-emerald-600 font-medium" disabled /></div>
+                  {/* 4. EXCEL ИМПОРТ */}
+                  {activeMenu === 'Excel / ODS импорт' && (
+                    <div className="bg-white p-10 rounded-2xl border border-slate-200 shadow-sm max-w-xl mx-auto text-center space-y-4">
+                      <span className="text-5xl block">📊</span>
+                      <h3 className="text-lg font-bold text-slate-800">Мэргэжлийн Сэлбэг & ХАБЭА Файл Уншуулах</h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">Та өөрийн `.ods` эсвэл `.xlsx` файлыг оруулснаар манай систем автоматаар Sheet 1-ийг "Агуулах"-д, Sheet 2-ийг "ХАБЭА"-д хуулж Excel шиг засах талбарыг үүсгэнэ.</p>
+                      <div className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-10 bg-slate-50 relative cursor-pointer transition">
+                        <input type="file" accept=".xlsx, .xls, .ods" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                        <p className="text-xs font-medium text-slate-600">Файлаа сонгох эсвэл энд чирч авчирна уу</p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {/* 5. ХЭРЭГЛЭГЧИД */}
+                  {activeMenu === 'Хэрэглэгчид' && (
+                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                      <table className="w-full text-sm text-left">
+                        <thead><tr className="border-b text-slate-400 text-xs"><th className="pb-3">Нэр</th><th>Эрх</th><th>И-мэйл</th></tr></thead>
+                        <tbody>{users.map((u, i) => (<tr key={i} className="border-b border-slate-100"><td className="py-3 font-medium">{u.name}</td><td><span className="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-xl font-medium">{u.role}</span></td><td>{u.email}</td></tr>))}</tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* 6. ТОХИРГОО */}
+                  {activeMenu === 'Тохиргоо' && (
+                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-md">
+                      <h4 className="font-bold text-slate-800 mb-4 text-base">Системийн төлөв</h4>
+                      <p className="text-sm text-slate-500">Байгууллага: <b className="text-slate-800">Best Shoes LLC</b></p>
+                      <p className="text-sm text-slate-500 mt-2">Төлөв: <b className="text-emerald-600">Хүснэгтэн засах модуль идэвхтэй</b></p>
+                    </div>
+                  )}
+
+                </div>
               </main>
 
-              {/* МОДАЛЬ ЦОНХНУУД (ФОРМУУД) */}
-              {isIncomingModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 backdrop-blur-xs">
-                  <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-xl">
-                    <h4 className="font-bold text-slate-800 mb-3">Шинэ орлого бүртгэх</h4>
-                    <form onSubmit={handleAddIncoming} className="space-y-3 text-xs">
-                      <div><label className="block mb-1 font-medium">Бараа, сэлбэгийн нэр *</label><input type="text" required onChange={e => setForm({...form, name: e.target.value})} className="w-full border p-2 rounded-xl" /></div>
-                      <div><label className="block mb-1 font-medium">Материалын код</label><input type="text" onChange={e => setForm({...form, code: e.target.value})} className="w-full border p-2 rounded-xl" /></div>
-                      <div><label className="block mb-1 font-medium">Тоо ширхэг *</label><input type="number" required onChange={e => setForm({...form, qty: e.target.value})} className="w-full border p-2 rounded-xl" /></div>
-                      <div><label className="block mb-1 font-medium">Нийлүүлэгч</label><input type="text" onChange={e => setForm({...form, supplier: e.target.value})} className="w-full border p-2 rounded-xl" /></div>
-                      <div className="flex gap-2 justify-end pt-2"><button type="button" onClick={() => setIsIncomingModalOpen(false)} className="bg-slate-100 px-3 py-2 rounded-xl font-medium">Цуцлах</button><button type="submit" className="bg-blue-600 text-white px-3 py-2 rounded-xl font-medium">Орлогодох</button></div>
-                    </form>
-                  </div>
-                </div>
-              )}
-
-              {isOutgoingModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 backdrop-blur-xs">
-                  <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-xl">
-                    <h4 className="font-bold text-slate-800 mb-3">Зарлагын хуудас үүсгэх</h4>
-                    <form onSubmit={handleAddOutgoing} className="space-y-3 text-xs">
-                      <div><label className="block mb-1 font-medium">Зарлагадах барааны нэр *</label><input type="text" required onChange={e => setForm({...form, name: e.target.value})} className="w-full border p-2 rounded-xl" placeholder="Жишээ: Пүрш" /></div>
-                      <div><label className="block mb-1 font-medium">Код</label><input type="text" onChange={e => setForm({...form, code: e.target.value})} className="w-full border p-2 rounded-xl" /></div>
-                      <div><label className="block mb-1 font-medium">Зарлагадах тоо *</label><input type="number" required onChange={e => setForm({...form, qty: e.target.value})} className="w-full border p-2 rounded-xl" /></div>
-                      <div><label className="block mb-1 font-medium">Хүлээн авах тасаг, хэлтэс</label><input type="text" onChange={e => setForm({...form, department: e.target.value})} className="w-full border p-2 rounded-xl" placeholder="Жишээ: Оёдолын тасаг" /></div>
-                      <div className="flex gap-2 justify-end pt-2"><button type="button" onClick={() => setIsOutgoingModalOpen(false)} className="bg-slate-100 px-3 py-2 rounded-xl font-medium">Цуцлах</button><button type="submit" className="bg-orange-600 text-white px-3 py-2 rounded-xl font-medium">Зарлагадах</button></div>
-                    </form>
-                  </div>
-                </div>
-              )}
-
-              {isHseModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50 backdrop-blur-xs">
-                  <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-xl">
-                    <h4 className="font-bold text-slate-800 mb-3">Шинэ ХАБЭА зааварчилгаа нэмэх</h4>
-                    <form onSubmit={handleAddHse} className="space-y-3 text-xs">
-                      <div><label className="block mb-1 font-medium">Үйлдвэрийн зааварчилгааны сэдэв *</label><input type="text" required onChange={e => setForm({...form, hseTopic: e.target.value})} className="w-full border p-2 rounded-xl" placeholder="Машины зааварчилгаа" /></div>
-                      <div><label className="block mb-1 font-medium">Зааврын ангилал / Төрөл</label><input type="text" onChange={e => setForm({...form, hseType: e.target.value})} className="w-full border p-2 rounded-xl" placeholder="Ерөнхий, Тусгай гэх мэт" /></div>
-                      <div><label className="block mb-1 font-medium">Дотоод код</label><input type="text" onChange={e => setForm({...form, code: e.target.value})} className="w-full border p-2 rounded-xl" placeholder="HSE-005" /></div>
-                      <div><label className="block mb-1 font-medium">Хамаарах тасаг хэлтэс</label><input type="text" onChange={e => setForm({...form, hseDept: e.target.value})} className="w-full border p-2 rounded-xl" placeholder="Оёдолын тасаг" /></div>
-                      <div className="flex gap-2 justify-end pt-2"><button type="button" onClick={() => setIsHseModalOpen(false)} className="bg-slate-100 px-3 py-2 rounded-xl font-medium">Цуцлах</button><button type="submit" className="bg-emerald-600 text-white px-3 py-2 rounded-xl font-medium">Бүртгэх</button></div>
-                    </form>
-                  </div>
-                </div>
-              )}
             </div>
           );
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<InventoryDashboard />);
+        root.render(<ExcelApp />);
     </script>
 </body>
 </html>
