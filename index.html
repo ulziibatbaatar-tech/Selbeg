@@ -28,7 +28,7 @@
           const [newQty, setNewQty] = useState('');
           const [newSupplier, setNewSupplier] = useState('');
 
-          // Агуулахын орлогын үндсэн дата (Анхны статик өгөгдөл)
+          // Үндсэн дата
           const [recentIncoming, setRecentIncoming] = useState([
             { name: 'Пүрш', code: 'SPR-001', qty: 120, supplier: 'Блю Стар ХХК' },
             { name: 'Боолт M10', code: 'BLT-010', qty: 500, supplier: 'Техно Импекс' },
@@ -37,7 +37,7 @@
 
           const stats = [
             { title: 'Нийт бараа', value: recentIncoming.length },
-            { title: 'Нийт үлдэгдэл', value: recentIncoming.reduce((sum, item) => sum + Number(item.qty), 0).toLocaleString() },
+            { title: 'Нийт үлдэгдэл', value: recentIncoming.reduce((sum, item) => sum + Number(item.qty || 0), 0).toLocaleString() },
             { title: 'Өнөөдрийн орлого', value: '23' },
             { title: 'Өнөөдрийн зарлага', value: '18' },
           ];
@@ -48,7 +48,7 @@
             { name: 'Ажлын бээлий', code: 'GLV-002', qty: 10, department: 'Үйлдвэрлэл' },
           ];
 
-          // 📂 EXCEL / ODS ФАЙЛ УНШИЖ ИМПОРТЛОХ ФУНКЦ
+          // 📂 УХААЛАГ EXCEL / ODS ФАЙЛ УНШИХ ЛОГИК
           const handleFileUpload = (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -57,48 +57,55 @@
             reader.onload = (evt) => {
               try {
                 const bstr = evt.target.result;
-                // Файлыг унших (Excel эсвэл ODS форматыг автоматаар танина)
                 const wb = XLSX.read(bstr, { type: 'binary' });
-                
-                // Эхний хуудас (Sheet)-ийг авах
                 const wsname = wb.SheetNames[0];
                 const ws = wb.Sheets[wsname];
                 
-                // Хуудасны өгөгдлийг JSON формат руу хөрвүүлэх
-                const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                // Энд шууд объектын жагсаалт болгож хөрвүүлнэ (Баганын нэр хамаарахгүй уншихын тулд)
+                const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 });
                 
-                if (data.length < 2) {
-                  alert("Файл хоосон байна эсвэл формат буруу байна.");
+                if (!rawData || rawData.length === 0) {
+                  alert("Файл хоосон байна.");
                   return;
                 }
 
-                // Эхний мөр нь баганын нэрс (Header) байна гэж тооцно: [Нэр, Код, Тоо, Нийлүүлэгч]
                 const importedItems = [];
-                for (let i = 1; i < data.length; i++) {
-                  const row = data[i];
-                  if (row[0]) { // Хэрэв нэр байвал жагсаалтад нэмнэ
-                    importedItems.push({
-                      name: row[0] || 'Нэргүй сэлбэг',
-                      code: row[1] || 'КОДГҮЙ',
-                      qty: parseInt(row[2]) || 0,
-                      supplier: row[3] || 'Тодорхойгүй'
-                    });
+
+                // Эхний хэдэн мөрөнд тайлбар эсвэл хоосон зай байж болох тул өгөгдөлтэй хэсгийг шүүж уншина
+                rawData.forEach((row, index) => {
+                  // Хэрэв эхний багана нь баганын гарчиг (Нэр, Код гэх мэт) эсвэл хоосон байвал алгасна
+                  if (index === 0 || !row || row.length === 0) return;
+                  
+                  // Жагсаалтын багануудыг оноох (row[0]=Нэр, row[1]=Код, row[2]=Тоо, row[3]=Нийлүүлэгч)
+                  const name = row[0]?.toString().trim();
+                  const code = row[1]?.toString().trim() || '---';
+                  const qty = parseInt(row[2]) || 0;
+                  const supplier = row[3]?.toString().trim() || 'Тодорхойгүй';
+
+                  // Хэрэв Нэр байвал жагсаалтад нэмнэ (Гарчиг эсвэл нийт дүн гэсэн мөр байвал алгасна)
+                  if (name && name !== "Нэр" && name !== "Нийт" && name !== "Нийт дүн") {
+                    importedItems.push({ name, code, qty, supplier });
                   }
+                });
+
+                if (importedItems.length === 0) {
+                  alert("Файлаас тохирох өгөгдөл олдсонгүй. Баганы дараалал: [Нэр, Код, Тоо, Нийлүүлэгч] байгаа эсэхийг шалгаарай.");
+                  return;
                 }
 
-                // Хуучин дата дээр шинэ импортолсон бараануудыг нэмэх
+                // Датаг шинэчлэх
                 setRecentIncoming([...importedItems, ...recentIncoming]);
-                alert(`Амжилттай! ${importedItems.length} ш барааг файлаас импортоор авлаа.`);
-                setActiveMenu('Хяналтын самбар'); // Шууд Хяналтын самбар руу шилжих
+                alert(`Амжилттай! ${importedItems.length} ш барааг файлаас уншиж, нэмлээ.`);
+                setActiveMenu('Хяналтын самбар');
               } catch (error) {
                 console.error(error);
-                alert("Файлыг уншихад алдаа гарлаа. Файлын бүтэц зөв эсэхийг шалгана уу.");
+                alert("Файлыг уншихад алдаа гарлаа. Зөв форматтай эсэхийг шалгана уу.");
               }
             };
             reader.readAsBinaryString(file);
           };
 
-          // Гар аргаар шинэ орлого нэмэх функц
+          // Шинэ орлого гараар нэмэх
           const handleAddIncoming = (e) => {
             e.preventDefault();
             if (!newName || !newCode || !newQty || !newSupplier) return alert('Бүх талбарыг бөглөнө үү!');
@@ -112,12 +119,16 @@
             setNewName(''); setNewCode(''); setNewQty(''); setNewSupplier('');
           };
 
-          // Хайлтаар шүүх
-          const filteredIncoming = recentIncoming.filter(item => 
-            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.supplier.toLowerCase().includes(searchTerm.toLowerCase())
-          );
+          // Хайлтаар шүүх (Жижиг том үсэг хамаарахгүй, хоосон зайг арилгаж шүүнэ)
+          const filteredIncoming = recentIncoming.filter(item => {
+            const search = searchTerm.trim().toLowerCase();
+            if (!search) return true;
+            return (
+              item.name?.toLowerCase().includes(search) ||
+              item.code?.toLowerCase().includes(search) ||
+              item.supplier?.toLowerCase().includes(search)
+            );
+          });
 
           return (
             <div className="min-h-screen bg-slate-100 flex">
@@ -170,11 +181,11 @@
                   </div>
                 </div>
 
-                {/* 📂 EXCEL / ODS ИМПОРТ ХИЙХ ХУУДАС */}
+                {/* 📂 EXCEL / ODS ИМПОРТ ХУУДАС */}
                 {activeMenu === 'Excel / ODS импорт' ? (
                   <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto">
                     <h3 className="text-xl font-bold text-slate-800 mb-2">Excel эсвэл ODS файлаас дата унших</h3>
-                    <p className="text-slate-500 text-sm mb-6">Агуулахын сэлбэг, барааны жагсаалт бүхий файлаа оруулна уу. Файлын баганын бүтэц дарааллаараа: [Нэр, Код, Тоо, Нийлүүлэгч] байхыг анхаарна уу.</p>
+                    <p className="text-slate-500 text-sm mb-6">Агуулахын сэлбэг, барааны жагсаалт бүхий файлаа оруулна уу. Файлын баганын бүтэц зүүнээс баруун тийшээ: **[1: Нэр, 2: Код, 3: Тоо, 4: Нийлүүлэгч]** дарааллаар байх ёстойг анхаарна уу.</p>
                     
                     <div className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-10 text-center cursor-pointer transition bg-slate-50 relative">
                       <input 
@@ -207,66 +218,35 @@
                     </div>
 
                     {/* Inventory Section */}
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+                    <div className="grid grid-cols-1 gap-6 mb-8">
                       {/* Сүүлийн орлогууд */}
                       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
                         <div className="flex justify-between items-center mb-5">
-                          <h3 className="text-xl font-bold text-slate-800">Сүүлийн орлогууд</h3>
-                          <button className="text-blue-600 font-medium hover:underline">Бүгдийг харах</button>
+                          <h3 className="text-xl font-bold text-slate-800">Агуулахын орлогын жагсаалт ({filteredIncoming.length})</h3>
                         </div>
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                           <table className="w-full">
-                            <thead>
-                              <tr className="text-left border-b border-slate-200 text-slate-600">
-                                <th className="pb-3">Нэр</th>
-                                <th className="pb-3">Код</th>
-                                <th className="pb-3">Тоо</th>
-                                <th className="pb-3">Нийлүүлэгч</th>
+                            <thead className="sticky top-0 bg-white shadow-sm text-slate-600 z-10">
+                              <tr className="text-left border-b border-slate-200">
+                                <th className="pb-3 pt-2">Нэр</th>
+                                <th className="pb-3 pt-2">Код</th>
+                                <th className="pb-3 pt-2">Тоо</th>
+                                <th className="pb-3 pt-2">Нийлүүлэгч</th>
                               </tr>
                             </thead>
                             <tbody>
                               {filteredIncoming.length > 0 ? filteredIncoming.map((item, index) => (
                                 <tr key={index} className="border-b border-slate-100 hover:bg-slate-50 transition">
-                                  <td className="py-4 font-medium text-slate-800">{item.name}</td>
-                                  <td className="py-4 text-slate-600">{item.code}</td>
-                                  <td className="py-4 font-semibold text-blue-600">+{item.qty}</td>
-                                  <td className="py-4 text-slate-600">{item.supplier}</td>
+                                  <td className="py-3 font-medium text-slate-800">{item.name}</td>
+                                  <td className="py-3 text-slate-600">{item.code}</td>
+                                  <td className="py-3 font-semibold text-blue-600">+{item.qty}</td>
+                                  <td className="py-3 text-slate-600">{item.supplier}</td>
                                 </tr>
                               )) : (
                                 <tr>
-                                  <td colSpan="4" className="text-center py-6 text-slate-400">Бараа олдсонгүй.</td>
+                                  <td colSpan="4" className="text-center py-10 text-slate-400">Бараа олдсонгүй эсвэл хайлт тохирохгүй байна.</td>
                                 </tr>
                               )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* Сүүлийн зарлагууд */}
-                      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                        <div className="flex justify-between items-center mb-5">
-                          <h3 className="text-xl font-bold text-slate-800">Сүүлийн зарлагууд</h3>
-                          <button className="text-blue-600 font-medium hover:underline">Бүгдийг харах</button>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="text-left border-b border-slate-200 text-slate-600">
-                                <th className="pb-3">Нэр</th>
-                                <th className="pb-3">Код</th>
-                                <th className="pb-3">Тоо</th>
-                                <th className="pb-3">Хэлтэс</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {recentOutgoing.map((item, index) => (
-                                <tr key={index} className="border-b border-slate-100 hover:bg-slate-50 transition">
-                                  <td className="py-4 font-medium text-slate-800">{item.name}</td>
-                                  <td className="py-4 text-slate-600">{item.code}</td>
-                                  <td className="py-4 font-semibold text-orange-600">-{item.qty}</td>
-                                  <td className="py-4 text-slate-600">{item.department}</td>
-                                </tr>
-                              ))}
                             </tbody>
                           </table>
                         </div>
