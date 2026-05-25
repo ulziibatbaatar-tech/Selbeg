@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мэргэжлийн Excel & Томьёоны Систем</title>
+    <title>Мэргэжлийн Excel & Ухаалаг Хүснэгт</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://unpkg.com/hot-formula-parser@2.3.4/dist/formula-parser.min.js"></script>
     <style>
         .excel-table {
             border-collapse: collapse;
@@ -61,24 +60,19 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect } = React;
 
-        // Томьёо бодогч парсер үүсгэх
-        const parser = new formulaParser.Parser();
-
-        function FormulaExcelApp() {
+        function BuiltInExcelApp() {
           const [sheets, setSheets] = useState({
             "Сэлбэгийн Агуулах": Array(25).fill(null).map(() => Array(10).fill(''))
           });
           const [activeSheet, setActiveSheet] = useState("Сэлбэгийн Агуулах");
-          
-          // Аль нүдийг идэвхтэй засаж байгааг хянах төлөв (Орхисон үед томьёог бодож харуулна)
           const [editingCell, setEditingCell] = useState({ rIdx: null, cIdx: null });
 
           const currentGrid = sheets[activeSheet] || [];
           const colCount = currentGrid[0]?.length || 10;
 
-          // Excel-ийн баганын А, B, C... хаягийг тоо руу, тоог хаяг руу хөрвүүлэх
+          // Excel-ийн баганын А, B, C... хаягийг үүсгэх
           const getColumnLabel = (index) => {
             let label = '';
             while (index >= 0) {
@@ -88,33 +82,95 @@
             return label;
           };
 
-          // Томьёон доторх нүднүүдийн утгыг олох функцийг Парсерт бүртгэх
-          parser.on('callCellValue', (cellCoord, done) => {
-            const cIdx = cellCoord.column.index;
-            const rIdx = cellCoord.row.index;
-            
-            const rawValue = currentGrid[rIdx]?.[cIdx];
-            
-            // Хэрэв тухайн нүд өөрөө томьёо байвал давхар бодно
-            if (typeof rawValue === 'string' && rawValue.startsWith('=')) {
-              const res = parser.parse(rawValue.substring(1));
-              done(res.error ? 0 : parseFloat(res.result) || 0);
-            } else {
-              done(parseFloat(rawValue) || 0);
+          // Баганын үсгийг индекс тоо руу хөрвүүлэх (Жишээ нь: "C" -> 2)
+          const colLetterToIndex = (letter) => {
+            let col = 0;
+            const str = letter.toUpperCase();
+            for (let i = 0; i < str.length; i++) {
+              col = col * 26 + (str.charCodeAt(i) - 64);
             }
-          });
+            return col - 1;
+          };
 
-          // Нүдний утгыг харуулах ухаалаг функц (Томьёо бол бодно, текст бол хэвээр нь харуулна)
+          // Дотоод ухаалаг томьёо бодогч (Гадны сан ашиглахгүй тул гацахгүй)
+          const evaluateFormula = (formulaStr, grid) => {
+            try {
+              const cleanFormula = formulaStr.substring(1).toUpperCase().trim();
+              
+              // 1. Хасах үйлдэл дэмжих (Жишээ нь: C1-D1)
+              if (cleanFormula.includes('-')) {
+                const parts = cleanFormula.split('-');
+                if (parts.length === 2) {
+                  const val1 = getCellValueByAddress(parts[0], grid);
+                  const val2 = getCellValueByAddress(parts[1], grid);
+                  return val1 - val2;
+                }
+              }
+
+              // 2. Нэмэх үйлдэл дэмжих (Жишээ нь: C1+D1)
+              if (cleanFormula.includes('+')) {
+                const parts = cleanFormula.split('+');
+                if (parts.length === 2) {
+                  const val1 = getCellValueByAddress(parts[0], grid);
+                  const val2 = getCellValueByAddress(parts[1], grid);
+                  return val1 + val2;
+                }
+              }
+
+              // 3. SUM функц дэмжих (Жишээ нь: SUM(C1:C10))
+              if (cleanFormula.startsWith('SUM(') && cleanFormula.endsWith(')')) {
+                const rangeStr = cleanFormula.substring(4, cleanFormula.length - 1);
+                if (rangeStr.includes(':')) {
+                  const [startAddress, endAddress] = rangeStr.split(':');
+                  
+                  const startMatch = startAddress.match(/^([A-Z]+)(\d+)$/);
+                  const endMatch = endAddress.match(/^([A-Z]+)(\d+)$/);
+                  
+                  if (startMatch && endMatch) {
+                    const startCol = colLetterToIndex(startMatch[1]);
+                    const startRow = parseInt(startMatch[2], 10) - 1;
+                    const endCol = colLetterToIndex(endMatch[1]);
+                    const endRow = parseInt(endMatch[2], 10) - 1;
+                    
+                    let sum = 0;
+                    for (let r = Math.min(startRow, endRow); r <= Math.max(startRow, endRow); r++) {
+                      for (let c = Math.min(startCol, endCol); c <= Math.max(startCol, endCol); c++) {
+                        const cellVal = grid[r]?.[c];
+                        sum += parseFloat(cellVal) || 0;
+                      }
+                    }
+                    return sum;
+                  }
+                }
+              }
+
+              return "Томьёо буруу";
+            } catch (err) {
+              return "#АЛДАА!";
+            }
+          };
+
+          // Нүдний хаягаар утгыг тоо болгож авах (Жишээ нь: "C1")
+          const getCellValueByAddress = (address, grid) => {
+            const match = address.trim().match(/^([A-Z]+)(\d+)$/);
+            if (!match) return 0;
+            const cIdx = colLetterToIndex(match[1]);
+            const rIdx = parseInt(match[2], 10) - 1;
+            const targetVal = grid[rIdx]?.[cIdx];
+            
+            if (typeof targetVal === 'string' && targetVal.startsWith('=')) {
+              return parseFloat(evaluateFormula(targetVal, grid)) || 0;
+            }
+            return parseFloat(targetVal) || 0;
+          };
+
+          // Харуулах утгыг шийдэх
           const renderCellValue = (val, rIdx, cIdx) => {
             if (typeof val === 'string' && val.startsWith('=')) {
-              // Хэрэв хэрэглэгч яг одоо засаж байгаа бол томьёог нь өөрийг нь харуулна
               if (editingCell.rIdx === rIdx && editingCell.cIdx === cIdx) {
-                return val;
+                return val; // Идэвхтэй засаж байвал томьёог харуулна
               }
-              // Засаж дуусаад өөр газар дарсан бол томьёоны хариуг бодож гаргана
-              const parsed = parser.parse(val.substring(1));
-              if (parsed.error) return `<Алдаа: ${parsed.error}>`;
-              return parsed.result;
+              return evaluateFormula(val, currentGrid); // Өөр газар дарвал бодсон хариуг харуулна
             }
             return val;
           };
@@ -159,10 +215,11 @@
           const exportToExcel = () => {
             const wb = XLSX.utils.book_new();
             Object.keys(sheets).forEach((sheetName) => {
+              // Татахдаа томьёог нь хэвээр нь хадгалж гаргана
               const ws = XLSX.utils.aoa_to_sheet(sheets[sheetName]);
               XLSX.utils.book_append_sheet(wb, ws, sheetName);
             });
-            XLSX.writeFile(wb, "Best_Shoes_Татан_Авалт.xlsx");
+            XLSX.writeFile(wb, "Best_Shoes_Агуулах.xlsx");
           };
 
           // 📝 НҮДНИЙ УТГА ӨӨРЧЛӨХ
@@ -172,7 +229,6 @@
             setSheets({ ...sheets, [activeSheet]: currentData });
           };
 
-          // Мөр, багана нэмэх хасах үйлдлүүд
           const addRow = () => {
             const currentData = [...sheets[activeSheet]];
             currentData.push(Array(colCount).fill(''));
@@ -205,12 +261,12 @@
           return (
             <div className="flex flex-col h-screen bg-slate-100 select-none">
               
-              {/* Дээд цэс */}
+                {/* Дээд удирдах хэсэг */}
               <header className="bg-white border-b border-slate-200 p-3 px-6 flex flex-wrap items-center justify-between gap-4 shadow-xs">
                 <div className="flex items-center gap-4">
-                  <div className="bg-blue-600 text-white p-1.5 px-3 rounded-lg font-bold text-sm tracking-wider">EXCEL FORMULA PRO</div>
-                  <div className="text-xs text-slate-400 font-medium bg-slate-100 p-1.5 rounded">
-                     Жишээ томьёо бичих: <code className="bg-slate-200 p-0.5 rounded font-bold text-slate-700">=C1+D1</code> эсвэл <code className="bg-slate-200 p-0.5 rounded font-bold text-slate-700">=SUM(C1:C10)</code>
+                  <div className="bg-blue-600 text-white p-1.5 px-3 rounded-lg font-bold text-sm tracking-wider">EXCEL STABLE PRO</div>
+                  <div className="text-xs text-slate-500 font-medium bg-slate-100 p-1.5 rounded">
+                     Томьёо: <code className="bg-slate-200 p-0.5 rounded font-bold text-slate-700">=C1-D1</code> эсвэл <code className="bg-slate-200 p-0.5 rounded font-bold text-slate-700">=SUM(C1:C15)</code>
                   </div>
                   <div className="flex gap-1">
                     <button onClick={addRow} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-2.5 py-1 rounded border border-slate-300 transition">+ Мөр</button>
@@ -230,7 +286,7 @@
                 </div>
               </header>
 
-              {/* Хүснэгтийн үндсэн хэсэг */}
+              {/* Хүснэгт */}
               <div className="flex-1 overflow-auto bg-white relative">
                 <table className="excel-table w-full">
                   <thead>
@@ -254,8 +310,7 @@
                             <div className="excel-cell-container">
                               <input 
                                 type="text" 
-                                // Хэрэв дарсан бол жинхэнэ утгыг/томьёог, өөр газар дарсан бол бодсон хариуг харуулна
-                                value={editingCell.rIdx === rIdx && editingCell.cIdx === cIdx ? cell : renderCellValue(cell, rIdx, cIdx)} 
+                                value={editingCell.rIdx === rIdx && editingCell.cIdx === cIdx ? (cell || '') : renderCellValue(cell, rIdx, cIdx)} 
                                 onFocus={() => setEditingCell({ rIdx, cIdx })}
                                 onBlur={() => setEditingCell({ rIdx: null, cIdx: null })}
                                 onChange={(e) => handleCellChange(e.target.value, rIdx, cIdx)}
@@ -270,7 +325,7 @@
                 </table>
               </div>
 
-              {/* Доод талын Шээт солих хэсэг */}
+              {/* Хуудас солих доод хэсэг */}
               <footer className="bg-slate-100 border-t border-slate-300 p-2 px-4 flex items-center justify-between">
                 <div className="flex items-center gap-1 overflow-x-auto max-w-4xl">
                   {Object.keys(sheets).map((sheetName) => (
@@ -285,7 +340,7 @@
                   <button onClick={addNewSheet} className="px-2.5 py-1 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded transition ml-1">+</button>
                 </div>
                 <div className="text-[11px] text-slate-400 font-mono">
-                  Идэвхтэй: {activeSheet}
+                  Хуудас: {activeSheet}
                 </div>
               </footer>
 
@@ -294,7 +349,7 @@
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<FormulaExcelApp />);
+        root.render(<BuiltInExcelApp />);
     </script>
 </body>
 </html>
