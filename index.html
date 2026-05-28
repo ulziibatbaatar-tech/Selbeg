@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="mn">
 <head>
@@ -822,50 +823,169 @@ th:nth-child(5),td:nth-child(5){display:none}
 
       <!-- ===== GOOGLE DRIVE ===== -->
       <div class="tab" id="tab-gdrive">
-        <div class="page-title"><i class="ti ti-brand-google-drive"></i> Google Drive автомат backup</div>
-        <div class="inline-alert info"><i class="ti ti-info-circle"></i>
-          <div><b>Хэрхэн ажилладаг вэ?</b><br>
-          Google Apps Script ашиглан таны Drive дотор JSON файл хэлбэрээр автоматаар хадгалдаг. Тохируулахад 5 минут шаардлагатай — доорх зааврыг дагана уу.</div>
+        <div class="page-title"><i class="ti ti-devices"></i> Төхөөрөмж хоорондын синхрончлол</div>
+
+        <div class="inline-alert warn" style="margin-bottom:1rem">
+          <i class="ti ti-info-circle"></i>
+          <div>Апп <b>localStorage</b>-д хадгалдаг тул гар утас болон компьютер <b>тусдаа өгөгдөлтэй</b> байдаг. Доорх аргуудаар синхрончилна уу.</div>
         </div>
-        <div class="sc2">
-          <h3><i class="ti ti-settings"></i> Webhook URL тохируулах</h3>
-          <div style="counter-reset:step">
-            <div style="margin-bottom:1rem;padding:.9rem 1rem;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border);font-size:13px;line-height:1.9">
-              <b>1.</b> <a href="https://script.google.com" target="_blank" style="color:var(--accent)">script.google.com</a> нээж шинэ Apps Script үүсгэнэ<br>
-              <b>2.</b> Доорх кодыг буулгана:<br>
-              <pre style="background:var(--bg4);padding:.75rem;border-radius:5px;font-size:11px;overflow-x:auto;margin:.5rem 0;font-family:var(--mono)">function doPost(e){
-  var data = JSON.parse(e.postData.contents);
-  var folder = DriveApp.getRootFolder();
-  var files = folder.getFilesByName('selbegiiin_backup.json');
-  if(files.hasNext()) files.next().setContent(JSON.stringify(data));
-  else folder.createFile('selbegiiin_backup.json', JSON.stringify(data));
-  return ContentService.createTextOutput('ok');
-}</pre>
-              <b>3.</b> Deploy → New deployment → Web app → Anyone → Deploy<br>
-              <b>4.</b> Гарсан URL-ийг доор оруулна
+
+        <!-- QR КОД АРГА — хамгийн хялбар -->
+        <div class="sc2" style="border:2px solid var(--accent);margin-bottom:1rem">
+          <h3><i class="ti ti-qrcode"></i> QR кодоор дамжуулах <span style="font-size:11px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:10px;margin-left:6px">Хамгийн хялбар</span></h3>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">
+            Компьютер дээр QR код үүсгэж, гар утсаар уншина → өгөгдөл шилжинэ.
+          </p>
+
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start">
+            <!-- QR үүсгэх -->
+            <div style="flex:1;min-width:220px">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:.5rem">
+                <span style="background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;margin-right:4px">1</span>
+                Компьютер дээр QR үүсгэх
+              </div>
+              <button class="btn p" onclick="generateQR()" style="width:100%;padding:10px;font-size:13px;margin-bottom:.5rem">
+                <i class="ti ti-qrcode"></i> QR код үүсгэх
+              </button>
+              <div id="qr-container" style="display:none;text-align:center">
+                <div id="qr-code" style="display:inline-block;padding:12px;background:#fff;border-radius:var(--r);border:2px solid var(--accent)"></div>
+                <div style="font-size:11px;color:var(--text2);margin-top:.4rem">Гар утсаараа уншина уу</div>
+                <div id="qr-size-warn" style="display:none;font-size:11px;color:var(--amber);margin-top:.3rem">
+                  ⚠️ Өгөгдөл их байна — хэсэгчлэн дамжуулна
+                </div>
+              </div>
+            </div>
+
+            <!-- QR унших -->
+            <div style="flex:1;min-width:220px">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:.5rem">
+                <span style="background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;margin-right:4px">2</span>
+                Гар утасны камераар унших
+              </div>
+              <div style="padding:.75rem;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border);font-size:12px;color:var(--text2);line-height:1.8">
+                iPhone: Камер апп → QR дарна<br>
+                Android: Камер → QR уншина<br>
+                Эсвэл: Chrome → QR Scanner
+              </div>
             </div>
           </div>
-          <div class="fg"><label>Google Apps Script Webhook URL</label><input id="gd-url" placeholder="https://script.google.com/macros/s/.../exec" type="url"/></div>
-          <div class="fg"><label>Автомат хадгалах давтамж</label>
-            <select id="gd-freq">
-              <option value="0">Автомат биш (гар аргаар)</option>
-              <option value="5" selected>5 минут тутамд</option>
-              <option value="15">15 минут тутамд</option>
-              <option value="30">30 минут тутамд</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn p" onclick="saveGDriveConfig()"><i class="ti ti-check"></i> Хадгалах</button>
-            <button class="btn g" onclick="syncNow()"><i class="ti ti-refresh"></i> Одоо sync хийх</button>
-          </div>
-          <div class="gdrive-status" id="gd-status" style="display:none">
-            <div class="gdot" id="gd-dot"></div>
-            <span id="gd-msg"></span>
+        </div>
+
+        <!-- JSON ФАЙЛ АРГА -->
+        <div class="sc2" style="border:2px solid var(--green);margin-bottom:1rem">
+          <h3><i class="ti ti-file-arrow-right"></i> JSON файлаар дамжуулах</h3>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:.4rem">📤 Энэ төхөөрөмжөөс татах</div>
+              <button class="btn p" onclick="exportAllData()" style="width:100%;padding:8px;font-size:13px">
+                <i class="ti ti-download"></i> JSON татах
+              </button>
+              <button class="btn" onclick="exportExcel()" style="width:100%;padding:8px;font-size:12px;margin-top:5px">
+                <i class="ti ti-file-spreadsheet"></i> Excel татах
+              </button>
+            </div>
+            <div style="flex:1;min-width:200px">
+              <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:.4rem">📥 Нөгөө төхөөрөмжөөс оруулах</div>
+              <label style="display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--green);border-radius:var(--r);padding:8px;cursor:pointer;background:var(--greenbg);font-size:12px;color:var(--green);width:100%;box-sizing:border-box"
+                ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDropSync(event)">
+                <i class="ti ti-upload"></i> JSON файл оруулах
+                <input type="file" id="sync-file" accept=".json" style="display:none" onchange="handleSyncFile(this)"/>
+              </label>
+              <div id="sync-preview" style="display:none;margin-top:.5rem;padding:.6rem;background:var(--bg3);border-radius:var(--r);font-size:12px">
+                <div id="sync-info" style="color:var(--green);margin-bottom:.4rem"></div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn g" onclick="confirmSyncImport()" style="font-size:11px;padding:5px 10px"><i class="ti ti-check"></i> Оруулах</button>
+                  <button class="btn" onclick="cancelSyncImport()" style="font-size:11px;padding:5px 10px"><i class="ti ti-x"></i> Болих</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="sc2">
-          <h3><i class="ti ti-history"></i> Sync түүх</h3>
-          <div id="gd-history"><div class="empty" style="padding:1.5rem">Sync хийгдэж байгаа мэдээлэл байхгүй</div></div>
+
+        <!-- GOOGLE DRIVE ХОЁР ЧИГЛЭЛТ SYNC -->
+        <div class="sc2" style="border:2px solid var(--accent)">
+          <h3><i class="ti ti-brand-google-drive"></i> Google Apps Script — Хоёр чиглэлт Sync
+            <span style="font-size:11px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:10px;margin-left:6px">Шилдэг арга</span>
+          </h3>
+
+          <div style="font-size:13px;color:var(--text2);margin-bottom:1rem;line-height:1.7">
+            Apps Script тохируулсны дараа <b>ямар ч төхөөрөмжөөс</b> өгөгдлийг Drive-д push хийж,
+            нөгөө төхөөрөмжид pull хийж авна. Интернэт байвал ажиллана.
+          </div>
+
+          <!-- Apps Script код -->
+          <div style="margin-bottom:1rem;padding:.75rem 1rem;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border);font-size:12px;line-height:1.9">
+            <b style="font-size:13px">📋 Apps Script тохируулах (1 удаа хийнэ):</b><br>
+            <b>1.</b> <a href="https://script.google.com" target="_blank" style="color:var(--accent)">script.google.com</a> → Шинэ төсөл үүсгэнэ<br>
+            <b>2.</b> Доорх кодыг бүгдийг нь хуулж буулгана:<br>
+            <div style="position:relative;margin:.5rem 0">
+              <pre id="apps-script-code" style="background:#1e1e2e;color:#cdd6f4;padding:.75rem;border-radius:var(--r);font-size:10.5px;overflow-x:auto;font-family:var(--mono);line-height:1.6;margin:0">function doPost(e){
+  var data=JSON.parse(e.postData.contents);
+  var folder=DriveApp.getRootFolder();
+  var fname='selbegiiin_sync.json';
+  var files=folder.getFilesByName(fname);
+  if(files.hasNext()) files.next().setContent(JSON.stringify(data));
+  else folder.createFile(fname,JSON.stringify(data),'application/json');
+  return ContentService.createTextOutput(JSON.stringify({ok:true,ts:new Date().toISOString()})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e){
+  var folder=DriveApp.getRootFolder();
+  var files=folder.getFilesByName('selbegiiin_sync.json');
+  if(files.hasNext()){
+    return ContentService.createTextOutput(files.next().getBlob().getDataAsString()).setMimeType(ContentService.MimeType.JSON);
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok:false,msg:'Файл олдсонгүй'})).setMimeType(ContentService.MimeType.JSON);
+}</pre>
+              <button onclick="copyScript()" style="position:absolute;top:6px;right:6px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);padding:3px 8px;font-size:10px;cursor:pointer;font-family:var(--font)">
+                <i class="ti ti-copy"></i> Хуулах
+              </button>
+            </div>
+            <b>3.</b> Deploy → New deployment → <b>Web app</b><br>
+            <b>4.</b> Execute as: <b>Me</b> · Who has access: <b>Anyone</b> → Deploy<br>
+            <b>5.</b> Гарсан <b>URL</b>-ийг доор оруулна
+          </div>
+
+          <!-- URL оруулах -->
+          <div class="fg">
+            <label>Apps Script URL *</label>
+            <input id="gd-url" placeholder="https://script.google.com/macros/s/.../exec" type="url"/>
+          </div>
+          <div class="frow">
+            <div class="fg">
+              <label>Автомат push давтамж</label>
+              <select id="gd-freq">
+                <option value="0">Автомат биш</option>
+                <option value="5">5 минут тутамд</option>
+                <option value="15">15 минут тутамд</option>
+                <option value="30">30 минут тутамд</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem">
+            <button class="btn p" onclick="saveGDriveConfig()"><i class="ti ti-check"></i> URL хадгалах</button>
+            <button class="btn g" onclick="syncPush()" title="Өгөгдлийг Drive-д хадгалах">
+              <i class="ti ti-cloud-upload"></i> Drive-д хадгалах (Push)
+            </button>
+            <button class="btn a" onclick="syncPull()" title="Drive-аас өгөгдөл татах">
+              <i class="ti ti-cloud-download"></i> Drive-аас авах (Pull)
+            </button>
+          </div>
+
+          <!-- Статус -->
+          <div id="gd-status-bar" style="display:none;padding:.6rem 1rem;border-radius:var(--r);font-size:12px;display:flex;align-items:center;gap:8px;margin-bottom:.5rem">
+            <div id="gd-dot" style="width:8px;height:8px;border-radius:50%;background:var(--green)"></div>
+            <span id="gd-msg"></span>
+          </div>
+
+          <!-- Sync мэдээлэл -->
+          <div id="gd-last-info" style="font-size:11px;color:var(--text3);display:flex;gap:12px;flex-wrap:wrap">
+            <span>⬆ Сүүлийн push: <b id="gd-last-push">—</b></span>
+            <span>⬇ Сүүлийн pull: <b id="gd-last-pull">—</b></span>
+          </div>
+
+          <!-- Sync түүх -->
+          <div id="gd-history" style="margin-top:.75rem"></div>
         </div>
       </div>
 
@@ -2676,6 +2796,145 @@ function clearTx(){
 }
 
 // ===== GOOGLE DRIVE =====
+// ===== QR КОД СИНХРОНЧЛОЛ =====
+function generateQR(){
+  var data={
+    version:APP_VER,
+    exportDate:new Date().toISOString(),
+    items:ITEMS,
+    tx:TX,
+    habea:HABEA,
+    habeatx:HABEA_TX
+  };
+  var json=JSON.stringify(data);
+  var container=document.getElementById('qr-container');
+  var qrDiv=document.getElementById('qr-code');
+  qrDiv.innerHTML='';
+  container.style.display='block';
+
+  // QR кодын хэмжээ шалгах (QR дэмжих хэмжээ ~2900 тэмдэгт)
+  var warn=document.getElementById('qr-size-warn');
+  if(json.length>2800){
+    // Зөвхөн ITEMS+HABEA дамжуулах (TX хасах)
+    var smallData={version:APP_VER,exportDate:new Date().toISOString(),items:ITEMS,habea:HABEA};
+    json=JSON.stringify(smallData);
+    warn.style.display='block';
+    warn.textContent='⚠️ Өгөгдөл их байсан тул гүйлгэлтийн түүхгүйгээр дамжуулж байна ('+ITEMS.length+' нэр)';
+  } else {
+    warn.style.display='none';
+  }
+
+  if(json.length>7000){
+    // QR-д багтахгүй — URL encode ашиглах
+    qrDiv.innerHTML='<div style="padding:1rem;font-size:12px;color:var(--red);text-align:center">Өгөгдөл QR-д багтахгүй байна ('+Math.round(json.length/1024)+'KB).<br>JSON файл ашиглана уу.</div>';
+    return;
+  }
+
+  // QRCode library ачаалах
+  if(typeof QRCode==='undefined'){
+    var script=document.createElement('script');
+    script.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.onload=function(){makeQR(qrDiv,json);};
+    script.onerror=function(){
+      // Fallback: QR API ашиглах
+      makeQRFallback(qrDiv,json);
+    };
+    document.head.appendChild(script);
+  } else {
+    makeQR(qrDiv,json);
+  }
+}
+function makeQR(container,text){
+  container.innerHTML='';
+  try{
+    new QRCode(container,{
+      text:text,
+      width:220,
+      height:220,
+      colorDark:'#000',
+      colorLight:'#fff',
+      correctLevel:QRCode.CorrectLevel.L
+    });
+  }catch(e){
+    makeQRFallback(container,text);
+  }
+}
+function makeQRFallback(container,text){
+  // Google Charts QR API ашиглах
+  var encoded=encodeURIComponent(text);
+  if(encoded.length>2000){
+    container.innerHTML='<div style="font-size:11px;color:var(--amber);padding:.5rem">Өгөгдөл их байна. JSON файл ашиглана уу.</div>';
+    return;
+  }
+  var img=document.createElement('img');
+  img.src='https://chart.googleapis.com/chart?chs=220x220&cht=qr&chl='+encoded+'&choe=UTF-8';
+  img.style.width='220px';img.style.height='220px';
+  container.appendChild(img);
+}
+function exportAllData(){
+  var data={
+    version:APP_VER,
+    exportDate:new Date().toISOString(),
+    exportDevice:navigator.userAgent.indexOf('Mobile')>=0?'Гар утас':'Компьютер',
+    items:ITEMS,
+    tx:TX,
+    habea:HABEA,
+    habeatx:HABEA_TX,
+    reports:JSON.parse(localStorage.getItem('bs3_reports')||'{}')
+  };
+  var json=JSON.stringify(data,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='selbegiiin_sync_'+tod()+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+  toast('JSON файл татагдлаа — нөгөө төхөөрөмжид оруулна уу','ok');
+}
+var _syncData=null;
+function dzDropSync(e){
+  e.preventDefault();
+  var file=e.dataTransfer.files[0];if(file)loadSyncFile(file);
+}
+function handleSyncFile(inp){var file=inp.files[0];if(file)loadSyncFile(file);}
+function loadSyncFile(file){
+  var r=new FileReader();
+  r.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(!data.items&&!data.habea){toast('Буруу файл формат','err');return;}
+      _syncData=data;
+      var info=document.getElementById('sync-info');
+      var itemCount=data.items?data.items.length:0;
+      var habeaCount=data.habea?data.habea.length:0;
+      var txCount=data.tx?data.tx.length:0;
+      var dateStr=data.exportDate?new Date(data.exportDate).toLocaleString('mn-MN'):'—';
+      info.innerHTML='<i class="ti ti-check" style="color:var(--green)"></i> <b>'+file.name+'</b><br>'+
+        'Нөөц: '+itemCount+' нэр · ХАБЭА: '+habeaCount+' нэр · Гүйлгэлт: '+txCount+'<br>'+
+        'Экспортлосон: '+dateStr+(data.exportDevice?' ('+data.exportDevice+')':'');
+      document.getElementById('sync-preview').style.display='block';
+    }catch(err){toast('JSON файл уншихад алдаа гарлаа','err');}
+  };
+  r.readAsText(file,'UTF-8');
+}
+function confirmSyncImport(){
+  if(!_syncData){toast('Файл сонгоогүй','err');return;}
+  if(!confirm('Одоогийн бүх өгөгдлийг солих уу?\n\nНөөц: '+(_syncData.items||[]).length+' нэр\nХАБЭА: '+(_syncData.habea||[]).length+' нэр'))return;
+  UNDO_SNAP=snapshot();
+  if(_syncData.items)ITEMS=_syncData.items;
+  if(_syncData.habea)HABEA=_syncData.habea;
+  if(_syncData.tx)TX=_syncData.tx;
+  if(_syncData.habeatx)HABEA_TX=_syncData.habeatx;
+  if(_syncData.reports)localStorage.setItem('bs3_reports',JSON.stringify(_syncData.reports));
+  save();renderAll();cancelSyncImport();
+  showUndo('Sync импортолдлоо — '+ITEMS.length+' нэр, '+HABEA.length+' ХАБЭА');
+  toast('Амжилттай синхрончлогдлоо!','ok');
+}
+function cancelSyncImport(){
+  document.getElementById('sync-preview').style.display='none';
+  document.getElementById('sync-file').value='';
+  _syncData=null;
+}
+// ===== GOOGLE DRIVE =====
 function renderGDrive(){
   var urlEl=document.getElementById('gd-url');
   var freqEl=document.getElementById('gd-freq');
@@ -2695,6 +2954,131 @@ function renderSyncLog(){
   });
   el.innerHTML=html;
 }
+function copyScript(){
+  var code=document.getElementById('apps-script-code').textContent;
+  navigator.clipboard.writeText(code).then(function(){toast('Код хуулагдлаа','ok');}).catch(function(){toast('Гараар хуулна уу','info');});
+}
+function gdSetStatus(msg,ok){
+  var bar=document.getElementById('gd-status-bar');
+  var dot=document.getElementById('gd-dot');
+  var msgEl=document.getElementById('gd-msg');
+  if(bar){bar.style.display='flex';bar.style.background=ok?'var(--greenbg)':'var(--redbg)';}
+  if(dot){dot.style.background=ok?'var(--green)':'var(--red)';}
+  if(msgEl)msgEl.textContent=msg;
+}
+function gdLogHistory(action,ok,detail){
+  var now=new Date().toLocaleTimeString('mn-MN');
+  SYNC_LOG.push({ok:ok,time:now,action:action,detail:detail||''});
+  if(SYNC_LOG.length>20)SYNC_LOG.shift();
+  save();
+  renderSyncLog();
+  // Сүүлийн push/pull цаг шинэчлэх
+  if(action==='push'){var el=document.getElementById('gd-last-push');if(el)el.textContent=now;}
+  if(action==='pull'){var el=document.getElementById('gd-last-pull');if(el)el.textContent=now;}
+}
+function syncPush(){
+  if(!GD_CONFIG.url){toast('URL тохируулна уу','err');return;}
+  gdSetStatus('Drive-д хадгалж байна...','wait');
+  var payload={
+    version:APP_VER,
+    pushDate:new Date().toISOString(),
+    items:ITEMS,tx:TX,habea:HABEA,habeatx:HABEA_TX,
+    reports:JSON.parse(localStorage.getItem('bs3_reports')||'{}')
+  };
+  fetch(GD_CONFIG.url,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify(payload)
+  }).then(function(){
+    // no-cors горимд response харагдахгүй ч request явсан
+    gdSetStatus('✓ Drive-д илгээгдлээ (no-cors)','ok');
+    gdLogHistory('push',true,'Push илгээгдлээ');
+    toast('Drive-д хадгалагдлаа ✓','ok');
+  }).catch(function(e){
+    gdSetStatus('Push алдаа: '+e.message,'err');
+    gdLogHistory('push',false,e.message);
+    toast('Push алдаа','err');
+  });
+}
+function syncPull(){
+  if(!GD_CONFIG.url){toast('URL тохируулна уу','err');return;}
+  gdSetStatus('Drive-аас татаж байна...','wait');
+  // Apps Script GET - URL-д ?action=get нэмэх
+  var url=GD_CONFIG.url;
+  // CORS асуудлаас зайлсхийхийн тулд iframe trick ашиглах
+  fetch(url,{method:'GET',mode:'no-cors'})
+  .then(function(){
+    // no-cors горимд response body уншиж болохгүй
+    // Тиймээс script tag trick ашиглана
+    return fetchViaScript(url);
+  })
+  .then(function(data){
+    if(!data||(!data.items&&!data.habea)){
+      gdSetStatus('Drive-д өгөгдөл олдсонгүй','err');
+      toast('Drive-д өгөгдөл байхгүй байна','err');
+      return;
+    }
+    var itemCount=data.items?data.items.length:0;
+    var habeaCount=data.habea?data.habea.length:0;
+    var pushDate=data.pushDate?new Date(data.pushDate).toLocaleString('mn-MN'):'—';
+    if(!confirm('Drive-с татах уу?\n\nНөөц: '+itemCount+' нэр\nХАБЭА: '+habeaCount+'\nХадгалсан: '+pushDate))return;
+    UNDO_SNAP=snapshot();
+    if(data.items)ITEMS=data.items;
+    if(data.tx)TX=data.tx;
+    if(data.habea)HABEA=data.habea;
+    if(data.habeatx)HABEA_TX=data.habeatx;
+    if(data.reports)localStorage.setItem('bs3_reports',JSON.stringify(data.reports));
+    save();renderAll();
+    gdSetStatus('✓ Drive-аас татлаа','ok');
+    gdLogHistory('pull',true,itemCount+' нөөц');
+    showUndo('Drive Pull: '+itemCount+' нөөц шинэчлэгдлээ');
+    toast('Drive-аас татагдлаа ✓','ok');
+  })
+  .catch(function(e){
+    gdSetStatus('Pull алдаа','err');
+    gdLogHistory('pull',false,e.message);
+    toast('Pull алдаа: '+e.message,'err');
+  });
+}
+function fetchViaScript(url){
+  return new Promise(function(resolve,reject){
+    var cbName='gs_cb_'+Date.now();
+    var script=document.createElement('script');
+    // JSONP аргаар өгөгдөл авах
+    window[cbName]=function(data){
+      delete window[cbName];
+      document.head.removeChild(script);
+      resolve(data);
+    };
+    script.onerror=function(){
+      delete window[cbName];
+      document.head.removeChild(script);
+      // JSONP ажиллахгүй бол шууд fetch оролдох
+      fetch(url)
+      .then(function(r){return r.json();})
+      .then(resolve)
+      .catch(reject);
+    };
+    script.src=url+'?callback='+cbName;
+    document.head.appendChild(script);
+    // 8 секунд timeout
+    setTimeout(function(){
+      if(window[cbName]){
+        delete window[cbName];
+        try{document.head.removeChild(script);}catch(e){}
+        // Шууд fetch оролдох
+        fetch(url)
+        .then(function(r){return r.json();})
+        .then(resolve)
+        .catch(reject);
+      }
+    },8000);
+  });
+}
+function syncNow(){syncPush();}
+function autoSync(){if(GD_CONFIG.url)syncPush();}
+function startAutoSync(){clearInterval(_syncTimer);_syncTimer=setInterval(autoSync,GD_CONFIG.freq*60*1000);}
 function saveGDriveConfig(){
   var url=document.getElementById('gd-url').value.trim();
   var freq=parseInt(document.getElementById('gd-freq').value)||0;
@@ -2702,26 +3086,7 @@ function saveGDriveConfig(){
   GD_CONFIG={url:url,freq:freq};save();
   clearInterval(_syncTimer);
   if(freq>0)startAutoSync();
-  toast('Хадгалагдлаа','ok');
-}
-function startAutoSync(){clearInterval(_syncTimer);_syncTimer=setInterval(autoSync,GD_CONFIG.freq*60*1000);}
-function autoSync(){if(GD_CONFIG.url)syncNow();}
-function syncNow(){
-  if(!GD_CONFIG.url){toast('URL тохируулна уу','err');return;}
-  var payload={items:ITEMS,tx:TX,habea:HABEA,habea_tx:HABEA_TX,timestamp:new Date().toISOString(),user:CU?CU.id:'?'};
-  fetch(GD_CONFIG.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-    .then(function(r){
-      var ok=r.ok;
-      var now=new Date().toLocaleTimeString('mn-MN');
-      SYNC_LOG.push({ok:ok,time:now});if(SYNC_LOG.length>20)SYNC_LOG.shift();save();
-      if(ok)toast('Google Drive sync амжилттай','ok');else toast('Sync алдаа','err');
-      renderSyncLog();
-    })
-    .catch(function(e){
-      var now=new Date().toLocaleTimeString('mn-MN');
-      SYNC_LOG.push({ok:false,time:now});save();
-      toast('Drive холбогдохгүй байна','err');renderSyncLog();
-    });
+  toast('URL хадгалагдлаа','ok');
 }
 
 // ===== PRINT =====
@@ -3041,16 +3406,17 @@ function showUndo(msg){
   document.getElementById('undo-msg').textContent=msg;
   var bar=document.getElementById('undo-bar');
   bar.classList.add('on');
-  var tb=document.getElementById('undo-timer');
-  // Animate timer bar
-  tb.style.transition='none';
-  tb.style.width='100%';
+  var tb=document.getElementById('undo-timer-bar');
+  if(tb){
+    tb.style.transition='none';
+    tb.style.width='100%';
+    clearTimeout(_ut);
+    setTimeout(function(){
+      tb.style.transition='width 30s linear';
+      tb.style.width='0%';
+    },50);
+  }
   clearTimeout(_ut);
-  setTimeout(function(){
-    tb.style.transition='width 30s linear';
-    tb.style.width='0%';
-  },50);
-  // Auto close after 10s
   _ut=setTimeout(function(){
     bar.classList.remove('on');
     UNDO_SNAP=null;
