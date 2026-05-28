@@ -1166,12 +1166,27 @@ function doGet(e){
     <div class="mdb">
       <div class="fg"><label>Хэрэгслийн нэр *</label><input id="he-name" placeholder="Нэр"/></div>
       <div class="frow">
-        <div class="fg"><label>Эхний үлдэгдэл</label><input id="he-prev" type="number" min="0" value="0"/></div>
-        <div class="fg"><label>Одоогийн үлдэгдэл</label><input id="he-qty" type="number" min="0" value="0"/></div>
+        <div class="fg">
+          <label>Эхний үлдэгдэл</label>
+          <input id="he-prev" type="number" min="0" value="0"/>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px">Сарын эхний тоо</div>
+        </div>
+        <div class="fg">
+          <label>Одоогийн үлдэгдэл</label>
+          <input id="he-qty" type="number" min="0" value="0"/>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px">Яг одоо байгаа тоо</div>
+        </div>
       </div>
       <div class="frow">
-        <div class="fg"><label>Орлого</label><input id="he-orl" type="number" min="0" value="0"/></div>
-        <div class="fg"><label>Зарлага</label><input id="he-zar" type="number" min="0" value="0"/></div>
+        <div class="fg">
+          <label>⬇️ Орлого (нийт авсан)</label>
+          <input id="he-orl" type="number" min="0" value="0"/>
+        </div>
+        <div class="fg">
+          <label>⬆️ Зарлага (нийт олгосон)</label>
+          <input id="he-zar" type="number" min="0" value="0"/>
+          <div style="font-size:10px;color:var(--amber);margin-top:3px">⚠️ Эерэг тоо оруулна (хасах тэмдэггүй)</div>
+        </div>
       </div>
       <input type="hidden" id="he-idx" value="-1"/>
     </div>
@@ -1537,10 +1552,10 @@ function openEdit(ri){
   var item=ITEMS[ri];
   document.getElementById('m-ititle').textContent='Засах — '+item.name;
   document.getElementById('fi-name').value=item.name;
-  document.getElementById('fi-prev').value=item.prev;
-  document.getElementById('fi-qty').value=item.uldegdel;
-  document.getElementById('fi-orl').value=item.orlogo;
-  document.getElementById('fi-zar').value=item.zarlaaga;
+  document.getElementById('fi-prev').value=Math.abs(item.prev||0);
+  document.getElementById('fi-qty').value=Math.abs(item.uldegdel||0);
+  document.getElementById('fi-orl').value=Math.abs(item.orlogo||0);
+  document.getElementById('fi-zar').value=Math.abs(item.zarlaaga||0);
   document.getElementById('fi-note').value=item.note||'';
   var mw=document.getElementById('fi-minwarn');if(mw)mw.value=item.minwarn||5;
   document.getElementById('fi-idx').value=ri;
@@ -1555,10 +1570,10 @@ function saveItem(){
   UNDO_SNAP=snapshot();
   var d={
     name:name,
-    prev:parseInt(document.getElementById('fi-prev').value)||0,
-    uldegdel:parseInt(document.getElementById('fi-qty').value)||0,
-    orlogo:parseInt(document.getElementById('fi-orl').value)||0,
-    zarlaaga:parseInt(document.getElementById('fi-zar').value)||0,
+    prev:Math.abs(parseInt(document.getElementById('fi-prev').value)||0),
+    uldegdel:Math.abs(parseInt(document.getElementById('fi-qty').value)||0),
+    orlogo:Math.abs(parseInt(document.getElementById('fi-orl').value)||0),
+    zarlaaga:Math.abs(parseInt(document.getElementById('fi-zar').value)||0),
     note:document.getElementById('fi-note').value.trim(),
     minwarn:minwarn
   };
@@ -2123,7 +2138,7 @@ filtered.forEach(function(item,i){
 var idx=HABEA.indexOf(item);
 var qs=item.uldegdel<=0?'color:var(--red);font-weight:700':item.uldegdel<=3?'color:var(--amber);font-weight:700':'color:var(--green);font-weight:700';
 var bg=i%2===0?'':'background:rgba(0,0,0,.018)';
-rows+='<tr style="'+bg+'" data-idx="'+idx+'">';
+rows+='<tr style="'+bg+';cursor:pointer" data-idx="'+idx+'" ondblclick="openHabeaEdit('+idx+')" title="Давхар дарж засах">';
 rows+='<td style="border:1px solid var(--border);padding:3px 3px;color:var(--text3);font-size:10px;text-align:center">'+(i+1)+'</td>';
 rows+='<td style="border:1px solid var(--border);padding:3px 5px;font-weight:500;font-size:12px" '+ce+' data-hfield="name" data-hidx="'+idx+'" onblur="cellSave(this)">'+item.name+'</td>';
 rows+='<td style="border:1px solid var(--border);padding:3px 3px;font-family:var(--mono);font-size:11px;text-align:center;background:rgba(180,220,160,.1)" '+ce+' data-hfield="prev" data-hidx="'+idx+'" onblur="cellSave(this)">'+(item.prev||0)+'</td>';
@@ -2589,9 +2604,9 @@ var item=HABEA[idx];
 document.getElementById('m-habea-edit-title').textContent='ХАБЭА засах — '+item.name;
 document.getElementById('he-name').value=item.name;
 document.getElementById('he-prev').value=item.prev||0;
-document.getElementById('he-qty').value=item.uldegdel;
-document.getElementById('he-orl').value=item.orlogo||0;
-document.getElementById('he-zar').value=item.zarlaaga||0;
+document.getElementById('he-qty').value=item.uldegdel||0;
+document.getElementById('he-orl').value=Math.abs(item.orlogo||0);
+document.getElementById('he-zar').value=Math.abs(item.zarlaaga||0);
 document.getElementById('he-idx').value=idx;openM('m-habea-edit');
 }
 function saveHabeaEdit(){
@@ -2599,7 +2614,12 @@ var idx=parseInt(document.getElementById('he-idx').value);
 var name=document.getElementById('he-name').value.trim();
 if(!name){toast('Нэр оруулна уу','err');return;}
 UNDO_SNAP=snapshot();
-var d={name:name,prev:parseInt(document.getElementById('he-prev').value)||0,uldegdel:parseInt(document.getElementById('he-qty').value)||0,orlogo:parseInt(document.getElementById('he-orl').value)||0,zarlaaga:parseInt(document.getElementById('he-zar').value)||0};
+// Зарлага заавал эерэг тоо байна (хасах тэмдэг хэрэггүй)
+var orlVal=Math.abs(parseInt(document.getElementById('he-orl').value)||0);
+var zarVal=Math.abs(parseInt(document.getElementById('he-zar').value)||0);
+var prevVal=Math.abs(parseInt(document.getElementById('he-prev').value)||0);
+var qtyVal=Math.abs(parseInt(document.getElementById('he-qty').value)||0);
+var d={name:name,prev:prevVal,uldegdel:qtyVal,orlogo:orlVal,zarlaaga:zarVal};
 if(idx>=0){Object.assign(HABEA[idx],d);}else{d.id=Date.now();HABEA.push(d);}
 save();closeM('m-habea-edit');renderHabea();
 showUndo(idx>=0?'"'+name+'" засагдлаа':'"'+name+'" нэмэгдлээ');
