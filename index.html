@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="mn">
 <head>
@@ -324,7 +323,7 @@ th:nth-child(5),td:nth-child(5){display:none}
     </div>
     <span class="tb-date" id="today-lbl"></span>
     <div id="gdrive-topbar" style="display:none;font-size:11px;color:var(--green);display:flex;align-items:center;gap:4px;margin-right:4px">
-      <i class="ti ti-brand-google-drive" style="font-size:15px"></i><span id="gd-top-txt">Sync</span>
+      <i class="ti ti-refresh" style="font-size:15px"></i><span id="gd-top-txt">Sync</span>
     </div>
     <button class="theme-btn" onclick="toggleTheme()" title="Дизайн солих"><i class="ti ti-moon" id="theme-ico"></i></button>
     <div class="uchip"><i class="ti ti-user"></i><span id="uname-lbl"></span></div>
@@ -354,7 +353,7 @@ th:nth-child(5),td:nth-child(5){display:none}
       <div class="nav-it" onclick="nav('rep',this)"><i class="ti ti-chart-bar"></i> Тайлан</div>
       <div class="nav-sec">Нэмэлт</div>
       <div class="nav-it" onclick="nav('habea',this)"><i class="ti ti-shield-check"></i> ХАБЭА</div>
-      <div class="nav-it" onclick="nav('gdrive',this)"><i class="ti ti-brand-google-drive"></i> Google Drive</div>
+      <div class="nav-it" onclick="nav('gdrive',this)"><i class="ti ti-refresh"></i> Sync / Drive</div>
       <div class="nav-it" id="nav-adm" onclick="nav('adm',this)"><i class="ti ti-settings"></i> Тохиргоо</div>
     </nav>
 
@@ -1273,6 +1272,7 @@ function doGet(e){
     <button class="mob-nav-it" onclick="mobNav('tx',this)"><i class="ti ti-list-details"></i><span>Гүйлгэлт</span></button>
     <button class="mob-nav-it" onclick="mobNav('rep',this)"><i class="ti ti-chart-bar"></i><span>Тайлан</span></button>
     <button class="mob-nav-it" onclick="mobNav('habea',this)"><i class="ti ti-shield-check"></i><span>ХАБЭА</span></button>
+    <button class="mob-nav-it" onclick="mobNav('gdrive',this)"><i class="ti ti-refresh"></i><span>Sync</span></button>
   </div>
 </div>
 
