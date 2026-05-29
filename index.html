@@ -418,6 +418,12 @@ th:nth-child(5),td:nth-child(5){display:none}
           <button class="btn" onclick="exportExcel()" title="Excel файлаар татах">
             <i class="ti ti-file-spreadsheet"></i> <span class="no-print-mob">Excel </span>татах
           </button>
+          <button class="btn g" onclick="pushToSheets('inv')" title="Google Sheets-д нөөцийг хадгалах" style="background:var(--greenbg);color:var(--green);border-color:rgba(15,158,99,.3)">
+            <i class="ti ti-brand-google"></i> Sheets↑
+          </button>
+          <button class="btn a" onclick="pullFromSheets('inv')" title="Google Sheets-с нөөц татах" style="background:var(--purplebg);color:var(--purple);border-color:rgba(107,70,193,.3)">
+            <i class="ti ti-brand-google"></i> Sheets↓
+          </button>
         </div>
 
         <!-- НӨӨЦИЙН IMPORT ZONE -->
@@ -703,6 +709,12 @@ th:nth-child(5),td:nth-child(5){display:none}
           </button>
           <button class="btn g" onclick="toggleHabeaAdd()" title="Excel sheet-с шинэ хэрэгсэл нэмэх (устгахгүй)">
             <i class="ti ti-table-plus"></i> Sheet нэмэх
+          </button>
+          <button class="btn g" onclick="pushToSheets('habea')" title="Google Sheets-д ХАБЭА хадгалах" style="background:var(--greenbg);color:var(--green);border-color:rgba(15,158,99,.3)">
+            <i class="ti ti-brand-google"></i> Sheets↑
+          </button>
+          <button class="btn a" onclick="pullFromSheets('habea')" title="Google Sheets-с ХАБЭА татах" style="background:var(--purplebg);color:var(--purple);border-color:rgba(107,70,193,.3)">
+            <i class="ti ti-brand-google"></i> Sheets↓
           </button>
         </div>
 
@@ -1951,16 +1963,23 @@ function doIssue(){
   showUndo('"'+item.name+'" '+qty+'ш олгогдлоо');
 }
 function doRecv(){
-  var ri=parseInt(document.getElementById('m-recv').dataset.ri||-1);
+  var riRaw=document.getElementById('m-recv').dataset.ri||'-1';
+  var isH=String(riRaw).charAt(0)==='h';
+  var ri=parseInt(isH?riRaw.slice(1):riRaw);
   if(ri<0){toast('Сэлбэг сонгоогүй','err');return;}
-  var item=ITEMS[ri];
+  var item=isH?HABEA[ri]:ITEMS[ri];
+  if(!item){toast('Сэлбэг олдсонгүй','err');return;}
   var qty=parseInt(document.getElementById('rec-qty').value)||0;
   if(qty<=0){toast('Тоо 0-ээс их байх ёстой','err');return;}
   UNDO_SNAP=snapshot();
   item.uldegdel+=qty;item.orlogo+=qty;
-  TX.push({type:'in',name:item.name,qty:qty,from:document.getElementById('rec-from').value||'—',doc:document.getElementById('rec-doc').value||'—',note:document.getElementById('rec-note').value,date:tod(),user:CU.id});
-  if(isH){item.uldegdel+=qty;item.orlogo+=qty;HABEA_TX.push({type:'in',name:item.name,qty:qty,from:document.getElementById('rec-from').value||'—',doc:document.getElementById('rec-doc').value||'—',date:tod(),user:CU.id});save();closeM('m-recv');renderHabea();}
-  else{save();closeM('m-recv');renderAll();}
+  if(isH){
+    HABEA_TX.push({type:'in',name:item.name,qty:qty,from:document.getElementById('rec-from').value||'—',doc:document.getElementById('rec-doc').value||'—',date:tod(),user:CU.id});
+    save();closeM('m-recv');renderHabea();
+  } else {
+    TX.push({type:'in',name:item.name,qty:qty,from:document.getElementById('rec-from').value||'—',doc:document.getElementById('rec-doc').value||'—',note:document.getElementById('rec-note').value,date:tod(),user:CU.id});
+    save();closeM('m-recv');renderAll();
+  }
   showUndo('"'+item.name+'" '+qty+'ш хүлээн авлаа');
 }
 
@@ -2896,7 +2915,73 @@ function clearTx(){
 }
 
 // ===== GOOGLE DRIVE =====
-// ===== QR КОД СИНХРОНЧЛОЛ =====
+// ===== SHEETS ШУУД PUSH / PULL =====
+function pushToSheets(type){
+  if(!GD_CONFIG.url){
+    toast('Sync таб → Apps Script URL тохируулна уу','err');
+    return;
+  }
+  var payload;
+  var label=type==='habea'?'ХАБЭА':'Нөөц';
+  if(type==='habea'){
+    payload={type:'push_all',habea:HABEA,items:[]};
+  } else {
+    payload={type:'push_all',items:ITEMS.filter(function(i){return !i._deleted;}),habea:HABEA};
+  }
+  toast(label+'-г Sheets-д хадгалж байна...','info');
+  fetch(GD_CONFIG.url,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify(payload)
+  }).then(function(){
+    toast('✓ '+label+' Sheets-д хадгалагдлаа','ok');
+    gdLogHistory('push',true,label+' → Sheets');
+  }).catch(function(e){
+    toast('Sheets холбогдохгүй байна: '+e.message,'err');
+  });
+}
+function pullFromSheets(type){
+  if(!GD_CONFIG.url){
+    toast('Sync таб → Apps Script URL тохируулна уу','err');
+    return;
+  }
+  var label=type==='habea'?'ХАБЭА':'Нөөц';
+  toast(label+'-г Sheets-с татаж байна...','info');
+  fetchViaScript(GD_CONFIG.url)
+  .then(function(data){
+    if(!data||!data.ok){
+      toast('Sheets-с өгөгдөл олдсонгүй','err');
+      return;
+    }
+    if(type==='inv'&&data.items&&data.items.length){
+      if(!confirm('Sheets-с '+data.items.length+' нөөц татах уу?\nОдоогийн өгөгдөл солигдоно.'))return;
+      UNDO_SNAP=snapshot();
+      ITEMS=data.items.map(function(r,i){
+        return{id:i+1,name:r.name,prev:r.prev||0,orlogo:r.orlogo||0,zarlaaga:r.zarlaaga||0,uldegdel:r.uldegdel||0,note:'',minwarn:r.minwarn||5};
+      });
+      save();renderAll();
+      showUndo('Sheets-с '+ITEMS.length+' нөөц татагдлаа');
+      toast('✓ Нөөц Sheets-с шинэчлэгдлээ ('+ITEMS.length+' нэр)','ok');
+      gdLogHistory('pull',true,'Нөөц ← Sheets: '+ITEMS.length);
+    } else if(type==='habea'&&data.habea&&data.habea.length){
+      if(!confirm('Sheets-с '+data.habea.length+' ХАБЭА татах уу?\nОдоогийн өгөгдөл солигдоно.'))return;
+      UNDO_SNAP=snapshot();
+      HABEA=data.habea.map(function(r,i){
+        return{id:i+1,name:r.name,prev:r.uldegdel||0,orlogo:r.orlogo||0,zarlaaga:r.zarlaaga||0,uldegdel:r.uldegdel||0};
+      });
+      save();renderHabea();
+      showUndo('Sheets-с '+HABEA.length+' ХАБЭА татагдлаа');
+      toast('✓ ХАБЭА Sheets-с шинэчлэгдлээ ('+HABEA.length+' нэр)','ok');
+      gdLogHistory('pull',true,'ХАБЭА ← Sheets: '+HABEA.length);
+    } else {
+      toast('Sheets-д '+label+'-ийн өгөгдөл байхгүй байна','err');
+    }
+  })
+  .catch(function(e){
+    toast('Pull алдаа: '+e.message,'err');
+  });
+}
 function generateQR(){
   var data={
     version:APP_VER,
@@ -3201,83 +3286,72 @@ function printInvDirect(){
 var items=ITEMS.filter(function(i){return !i._deleted;});
 var sf=document.getElementById('sf')?document.getElementById('sf').value:'';
 if(sf){items=items.filter(function(i){
-return (!sf)||(sf==='ok'&&i.uldegdel>0&&i.uldegdel>(i.minwarn||5)&&!i._new)||(sf==='low'&&i.uldegdel>0&&i.uldegdel<=(i.minwarn||5))||(sf==='out'&&i.uldegdel<=0)||(sf==='move'&&(i.orlogo>0||i.zarlaaga>0))||(sf==='new'&&i._new);
+return(!sf)||(sf==='ok'&&i.uldegdel>0&&i.uldegdel>(i.minwarn||5)&&!i._new)||(sf==='low'&&i.uldegdel>0&&i.uldegdel<=(i.minwarn||5))||(sf==='out'&&i.uldegdel<=0)||(sf==='move'&&(i.orlogo>0||i.zarlaaga>0))||(sf==='new'&&i._new);
 });}
 var now=new Date().toLocaleDateString('mn-MN');
 var totP=0,totO=0,totZ=0,totU=0;
-// 2 баганаар хуваах
 var col1=[],col2=[];
 var half=Math.ceil(items.length/2);
-items.forEach(function(item,n){
-  if(n<half)col1.push(item);else col2.push(item);
+items.forEach(function(item,n){if(n<half)col1.push(item);else col2.push(item);});
+var makeRows=function(arr,offset){
+var r='';
+arr.forEach(function(item,n){
+totP+=item.prev||0;totO+=item.orlogo||0;totZ+=item.zarlaaga||0;totU+=item.uldegdel||0;
+var uc=item.uldegdel<=0?' red':item.uldegdel<=(item.minwarn||5)?' amb':'';
+var tc=item.uldegdel<=0?'Дс':item.uldegdel<=(item.minwarn||5)?'Дт':'Хв';
+r+='<tr><td class="num">'+(n+1+offset)+'</td>';
+r+='<td class="nm">'+item.name.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</td>';
+r+='<td class="num e">'+(item.prev||0)+'</td>';
+r+='<td class="num o">'+(item.orlogo>0?'+'+item.orlogo:'')+'</td>';
+r+='<td class="num z">'+(item.zarlaaga>0?'-'+item.zarlaaga:'')+'</td>';
+r+='<td class="num u'+uc+'">'+item.uldegdel+'</td>';
+r+='<td class="tc">'+tc+'</td></tr>';
 });
-function makeRows(arr,offset){
-  var r='';
-  arr.forEach(function(item,n){
-    totP+=item.prev||0;totO+=item.orlogo||0;totZ+=item.zarlaaga||0;totU+=item.uldegdel||0;
-    var uc=item.uldegdel<=0?'red':item.uldegdel<=(item.minwarn||5)?'amb':'';
-    var tc=item.uldegdel<=0?'Дс':item.uldegdel<=(item.minwarn||5)?'Дт':'Хв';
-    r+='<tr>';
-    r+='<td class="num">'+(n+1+offset)+'</td>';
-    r+='<td class="nm">'+item.name.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</td>';
-    r+='<td class="num e">'+(item.prev||0)+'</td>';
-    r+='<td class="num o">'+(item.orlogo>0?'+'+item.orlogo:'')+'</td>';
-    r+='<td class="num z">'+(item.zarlaaga>0?'-'+item.zarlaaga:'')+'</td>';
-    r+='<td class="num u'+(uc?' '+uc:'')+'">'+item.uldegdel+'</td>';
-    r+='<td class="tc">'+tc+'</td>';
-    r+='</tr>';
-  });
-  return r;
-}
+return r;
+};
 var rows1=makeRows(col1,0);
 var rows2=makeRows(col2,half);
+var makeTable=function(rows){
+var t='<table><thead><tr>';
+t+='<th style="width:16px">#</th><th style="text-align:left">Барааны нэр</th>';
+t+='<th style="width:22px" class="e">Эх</th><th style="width:24px" class="o">Орл</th>';
+t+='<th style="width:24px" class="z">Зар</th><th style="width:26px" class="u">Үлд</th>';
+t+='<th style="width:16px">Тл</th></tr></thead><tbody>'+rows+'</tbody></table>';
+return t;
+};
 var html='<!DOCTYPE html><html><head><meta charset="UTF-8">';
-html+='<style>';
-html+='@page{margin:.6cm .7cm;size:A4 portrait}';
-html+='*{box-sizing:border-box;margin:0;padding:0}';
+html+='<style>@page{margin:.6cm .7cm;size:A4 portrait}*{box-sizing:border-box;margin:0;padding:0}';
 html+='body{font-family:Arial,sans-serif;font-size:7.5px;color:#000}';
 html+='h2{font-size:10px;text-align:center;margin:0 0 1px;font-weight:bold}';
 html+='.info{text-align:center;font-size:7px;color:#444;margin-bottom:3px}';
-html+='.wrap{display:flex;gap:4px;align-items:flex-start}';
-html+='.col{flex:1;min-width:0}';
-html+='table{width:100%;border-collapse:collapse}';
-html+='th,td{border:1px solid #bbb;padding:2px 3px}';
+html+='.wrap{display:flex;gap:4px;align-items:flex-start}.col{flex:1;min-width:0}';
+html+='table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:2px 3px}';
 html+='th{background:#c8d8f0;font-weight:bold;font-size:7px;text-align:center}';
 html+='.nm{text-align:left;font-size:7px;white-space:normal;word-break:break-all;max-width:0;width:55%}';
 html+='.num{text-align:center;font-family:monospace;font-size:7px}';
 html+='.e{background:#d4e8c4}.o{background:#c4e8d0;color:#155724}';
 html+='.z{background:#f0dcc4;color:#7f3b00}.u{background:#c4d4f0}';
 html+='.red{color:red;font-weight:bold}.amb{color:#c65000;font-weight:bold}';
-html+='.tc{text-align:center;font-size:6.5px}';
-html+='tr:nth-child(even) td{background:#f5f5f5}';
-html+='tr:nth-child(even) td.o{background:#b8dcc4}';
-html+='tr:nth-child(even) td.z{background:#e8cca8}';
-html+='tr:nth-child(even) td.u{background:#b8c8e4}';
+html+='.tc{text-align:center;font-size:6.5px}tr:nth-child(even) td{background:#f5f5f5}';
 html+='.sum{background:#d8e8c4!important;font-weight:bold;font-size:7px}';
-html+='.foot{margin-top:3px;font-size:6px;color:#777;text-align:right}';
-html+='</style></head><body>';
+html+='.foot{margin-top:3px;font-size:6px;color:#777;text-align:right}</style></head><body>';
 html+='<h2>БЕСТ ШҮЕС ХХК — СЭЛБЭГИЙН НӨӨЦИЙН ТАЙЛАН (2026/04)</h2>';
 html+='<div class="info">Хэвлэсэн: '+now+' | Нийт: '+items.length+' нэр | '+(CU?CU.name:'')+'</div>';
-function makeTable(rows,tot){
-  var t='<table><thead><tr>';
-  t+='<th style="width:16px">#</th>';
-  t+='<th style="text-align:left">Барааны нэр</th>';
-  t+='<th style="width:22px" class="e">Эх</th>';
-  t+='<th style="width:24px" class="o">Орл</th>';
-  t+='<th style="width:24px" class="z">Зар</th>';
-  t+='<th style="width:26px" class="u">Үлд</th>';
-  t+='<th style="width:16px">Тл</th>';
-  t+='</tr></thead><tbody>'+rows+'</tbody></table>';
-  return t;
-}
-html+='<div class="wrap">';
-html+='<div class="col">'+makeTable(rows1,'')+'</div>';
-html+='<div class="col">'+makeTable(rows2,'')+'</div>';
-html+='</div>';
-html+='<div class="sum" style="margin-top:3px;padding:2px 4px;background:#d8e8c4;border:1px solid #bbb">НИЙТ: '+items.length+' нэр &nbsp;|&nbsp; Эхний: '+totP+' &nbsp;|&nbsp; Орлого: +'+totO+' &nbsp;|&nbsp; Зарлага: -'+totZ+' &nbsp;|&nbsp; Үлдэгдэл: '+totU+'</div>';
-html+='<div class="foot">Бест Шүес ХХК · '+now+'</div>';
-html+='</body></html>';
+html+='<div class="wrap"><div class="col">'+makeTable(rows1)+'</div><div class="col">'+makeTable(rows2)+'</div></div>';
+html+='<div class="sum" style="margin-top:3px;padding:2px 4px;border:1px solid #bbb">НИЙТ: '+items.length+' нэр | Эхний: '+totP+' | Орлого: +'+totO+' | Зарлага: -'+totZ+' | Үлдэгдэл: '+totU+'</div>';
+html+='<div class="foot">Бест Шүес ХХК · '+now+'</div></body></html>';
 doPrint(html);
+}
+
+function printTab(tab){
+  if(tab==='inv'){printInvDirect();return;}
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('print-active');});
+  var el=document.getElementById('tab-'+tab);
+  if(el)el.classList.add('print-active');
+  if(tab==='rep'){renderReport();}
+  if(tab==='habea'){renderHabea();}
+  window.print();
+  setTimeout(function(){if(el)el.classList.remove('print-active');},500);
 }
 function csvDL(name,header,rows){
   var csv=header+'\n'+rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
