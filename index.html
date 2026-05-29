@@ -306,7 +306,7 @@ th:nth-child(5),td:nth-child(5){display:none}
     <div class="fld"><label>Нууц үг</label><div class="pw-wrap"><input type="password" id="pw" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"/><button class="pw-eye" type="button" onclick="togglePw()" id="pw-eye-btn"><i class="ti ti-eye" id="pw-eye-ico"></i></button></div></div>
     <button class="btn-login" onclick="login()"><i class="ti ti-login" style="margin-right:6px;vertical-align:-2px"></i>Нэвтрэх</button>
     <div class="lerr" id="lerr"><i class="ti ti-alert-circle" style="vertical-align:-2px;margin-right:4px"></i>Нэр эсвэл нууц үг буруу байна</div>
-    <div class="lhint">Нэвтрэх: <b>Сэлбэг / 9761</b> &nbsp;·&nbsp; <b>admin / 9761</b><br>
+    <div class="lhint">Нэвтрэх: <b>admin / 9761</b><br>
       <span style="font-size:11px">Үсэг таниагүй бол: </span><button onclick="forceReloadData()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;text-decoration:underline;padding:0;font-family:var(--font)">Өгөгдөл дахин ачаалах</button></div>
   </div>
 </div>
@@ -546,13 +546,13 @@ th:nth-child(5),td:nth-child(5){display:none}
         <!-- Нөөцийн хүснэгт -->
         <div class="tw" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
           <table id="inv-table" style="table-layout:fixed;width:100%;min-width:400px">
-            <thead><tr>
+            <thead id="inv-thead"><tr>
               <th style="width:28px">#</th>
               <th style="width:auto">Барааны нэр</th>
-              <th style="width:52px;text-align:center">Эхний</th>
-              <th style="width:52px;text-align:center">Орлого</th>
-              <th style="width:52px;text-align:center">Зарлага</th>
-              <th style="width:58px;text-align:center">Үлдэгдэл</th>
+              <th style="width:52px;text-align:center;cursor:pointer;user-select:none" onclick="moveInvCol(2,-1)" title="← Урагш шилжүүлэх">Эхний <i class="ti ti-arrows-left-right" style="font-size:9px;opacity:.5"></i></th>
+              <th style="width:52px;text-align:center;cursor:pointer;user-select:none" onclick="moveInvCol(3,-1)" title="← Урагш шилжүүлэх">Орлого <i class="ti ti-arrows-left-right" style="font-size:9px;opacity:.5"></i></th>
+              <th style="width:52px;text-align:center;cursor:pointer;user-select:none" onclick="moveInvCol(4,-1)" title="← Урагш шилжүүлэх">Зарлага <i class="ti ti-arrows-left-right" style="font-size:9px;opacity:.5"></i></th>
+              <th style="width:58px;text-align:center;cursor:pointer;user-select:none" onclick="moveInvCol(5,-1)" title="← Урагш шилжүүлэх">Үлдэгдэл <i class="ti ti-arrows-left-right" style="font-size:9px;opacity:.5"></i></th>
               <th style="width:70px">Төлөв</th>
               <th style="width:75px" class="no-print">Үйлдэл</th>
             </tr></thead>
@@ -803,13 +803,13 @@ th:nth-child(5),td:nth-child(5){display:none}
 
         <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--sh)">
           <table id="habea-table" style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed">
-            <thead><tr>
+            <thead id="habea-thead"><tr>
               <th style="width:26px;padding:4px 3px;border:1px solid var(--border2);background:#c8d8f0;font-size:10px;text-align:center">#</th>
               <th style="padding:4px 6px;border:1px solid var(--border2);background:#c8d8f0;text-align:left;font-size:11px">Хэрэгслийн нэр</th>
-              <th style="width:52px;padding:4px 3px;border:1px solid var(--border2);background:#d4e8c4;text-align:center;font-size:11px">Эхний</th>
-              <th style="width:52px;padding:4px 3px;border:1px solid var(--border2);background:#c4e8d0;text-align:center;font-size:11px">Орлого</th>
-              <th style="width:52px;padding:4px 3px;border:1px solid var(--border2);background:#f0dcc4;text-align:center;font-size:11px">Зарлага</th>
-              <th style="width:58px;padding:4px 3px;border:1px solid var(--border2);background:#c4d4f0;text-align:center;font-size:11px">Үлдэгдэл</th>
+              <th style="width:52px;padding:4px 3px;border:1px solid var(--border2);background:#d4e8c4;text-align:center;font-size:11px;cursor:pointer" onclick="moveHabeaCol(2,-1)" title="← Шилжүүлэх">Эхний</th>
+              <th style="width:52px;padding:4px 3px;border:1px solid var(--border2);background:#c4e8d0;text-align:center;font-size:11px;cursor:pointer" onclick="moveHabeaCol(3,-1)" title="← Шилжүүлэх">Орлого</th>
+              <th style="width:52px;padding:4px 3px;border:1px solid var(--border2);background:#f0dcc4;text-align:center;font-size:11px;cursor:pointer" onclick="moveHabeaCol(4,-1)" title="← Шилжүүлэх">Зарлага</th>
+              <th style="width:58px;padding:4px 3px;border:1px solid var(--border2);background:#c4d4f0;text-align:center;font-size:11px;cursor:pointer" onclick="moveHabeaCol(5,-1)" title="← Шилжүүлэх">Үлдэгдэл</th>
               <th style="width:66px;padding:4px 3px;border:1px solid var(--border2);background:#c8d8f0;font-size:11px">Төлөв</th>
               <th style="width:70px;padding:4px 3px;border:1px solid var(--border2);background:#c8d8f0;font-size:10px" class="no-print">Үйлдэл</th>
             </tr></thead>
@@ -1307,7 +1307,7 @@ const RAW=[{"name": "380 тогны тэнцвэржүүлэгч", "prev": 1, "o
 const HABEA_RAW=[{"name": "мөнгний  бээлий", "orl": 0, "zar": 6, "uldegdel": 0}, {"name": "ажлын бээлий / цагаан /", "orl": 50, "zar": 335, "uldegdel": 0}, {"name": "ажлын бээлий / өнгийн /", "orl": 97, "zar": 1983, "uldegdel": 0}, {"name": "ажлын бээлий / улаан Резинтэй /", "orl": 25, "zar": 575, "uldegdel": 0}, {"name": "нүдний шил", "orl": 0, "zar": 16, "uldegdel": 0}, {"name": "чихэвч", "orl": 81, "zar": 1001, "uldegdel": 0}, {"name": "Шүүлтүүүртэй маск", "orl": 59, "zar": 2941, "uldegdel": 0}, {"name": "Хамгаалах шил", "orl": 0, "zar": 1, "uldegdel": 0}, {"name": "Резинтэй бээлий", "orl": 0, "zar": 0, "uldegdel": 0}, {"name": "Маскны шүүлтүүр", "orl": 0, "zar": 0, "uldegdel": 0}, {"name": "Филтертэй маск", "orl": 0, "zar": 8, "uldegdel": 0}, {"name": "А/а тэмдэг", "orl": 0, "zar": 0, "uldegdel": 0}];
 
 // ===== STATE =====
-let USERS=JSON.parse(localStorage.getItem('bs3_users')||'null')||{'Сэлбэг':{pass:'9761',role:'nyrav',name:'Нярав №1'},admin:{pass:'9761',role:'admin',name:'Админ'}};
+let USERS=JSON.parse(localStorage.getItem('bs3_users')||'null')||{admin:{pass:'9761',role:'admin',name:'Нярав'}};
 let ITEMS=JSON.parse(localStorage.getItem('bs3_items')||'null')||RAW.map(function(r,i){return{id:i+1,name:r.name,prev:r.prev||0,orlogo:r.orl||0,zarlaaga:r.zar||0,uldegdel:r.uldegdel||0,note:'',minwarn:r.minwarn||5};});
 let TX=JSON.parse(localStorage.getItem('bs3_tx')||'null')||[];
 let HABEA=JSON.parse(localStorage.getItem('bs3_habea')||'null')||HABEA_RAW.map(function(r,i){return{id:i+1,name:r.name,prev:r.uldegdel||0,orlogo:r.orl||0,zarlaaga:r.zar||0,uldegdel:r.uldegdel||0};});
@@ -1342,14 +1342,14 @@ function login(){
     document.getElementById('scr-login').style.display='none';
     document.getElementById('scr-app').classList.add('on');
     document.getElementById('uname-lbl').textContent=CU.name;
-    document.getElementById('role-lbl').textContent=CU.role==='admin'?'АДМИН':'НЯРАВ';
+    document.getElementById('role-lbl').textContent='НЯРАВ';
     document.getElementById('today-lbl').textContent=new Date().toLocaleDateString('mn-MN');
-    document.getElementById('nav-adm').style.display=CU.role==='admin'?'flex':'none';
+    document.getElementById('nav-adm').style.display='flex';
     document.getElementById('mob-nav').style.display='flex';
     var editBtns=['edit-inv-btn','edit-rep-btn','edit-habea-btn'];
     editBtns.forEach(function(id){
       var el=document.getElementById(id);
-      if(el)el.style.display=CU.role==='admin'?'flex':'none';
+      if(el)el.style.display='flex';
     });
     renderAll();
     if(GD_CONFIG.url&&GD_CONFIG.freq>0)startAutoSync();
@@ -1493,10 +1493,8 @@ function renderInv(){
       rows+='<tr style="'+rowBg+'transition:background .15s" data-ri="'+ri+'">';
       rows+='<td style="color:var(--text3);font-size:11px;text-align:center">'+(i+1)+'</td>';
       rows+='<td title="'+item.name+'" style="max-width:0;overflow:hidden"><div style="font-weight:500;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" '+ce+' data-field="name" data-ri="'+ri+'" onblur="cellSave(this)">'+item.name+'</div>'+rowTag+(item.note?'<div style="font-size:9px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+item.note+'</div>':'')+'</td>';
-      rows+='<td style="font-family:var(--mono);font-size:12px;color:var(--text2);text-align:center" '+ce+' data-field="prev" data-ri="'+ri+'" onblur="cellSave(this)">'+item.prev+'</td>';
-      rows+='<td style="font-family:var(--mono);font-size:12px;text-align:center;'+(item.orlogo>0?'color:var(--green);font-weight:700':'color:var(--text3)')+'" '+ce+' data-field="orlogo" data-ri="'+ri+'" onblur="cellSave(this)">'+(item.orlogo>0?'+'+item.orlogo:'—')+'</td>';
-      rows+='<td style="font-family:var(--mono);font-size:12px;text-align:center;'+(item.zarlaaga>0?'color:var(--amber);font-weight:700':'color:var(--text3)')+'" '+ce+' data-field="zarlaaga" data-ri="'+ri+'" onblur="cellSave(this)">'+(item.zarlaaga>0?'-'+item.zarlaaga:'—')+'</td>';
-      rows+='<td style="font-family:var(--mono);font-size:14px;text-align:center;'+qs+'" '+ce+' data-field="uldegdel" data-ri="'+ri+'" onblur="cellSave(this)">'+item.uldegdel+'</td>';
+      // Баганын дараалалаар өгөгдөл харуулах
+      INV_COLS.forEach(function(col){rows+=getInvCellVal(item,col,ce,ri);});
       rows+='<td>'+stBadge(item)+'</td>';
       rows+='<td class="no-print"><div class="actb">'+actBtns+'</div></td>';
       rows+='</tr>';
@@ -2141,10 +2139,7 @@ var bg=i%2===0?'':'background:rgba(0,0,0,.018)';
 rows+='<tr style="'+bg+';cursor:pointer" data-idx="'+idx+'" ondblclick="openHabeaEdit('+idx+')" title="Давхар дарж засах">';
 rows+='<td style="border:1px solid var(--border);padding:3px 3px;color:var(--text3);font-size:10px;text-align:center">'+(i+1)+'</td>';
 rows+='<td style="border:1px solid var(--border);padding:3px 5px;font-weight:500;font-size:12px" '+ce+' data-hfield="name" data-hidx="'+idx+'" onblur="cellSave(this)">'+item.name+'</td>';
-rows+='<td style="border:1px solid var(--border);padding:3px 3px;font-family:var(--mono);font-size:11px;text-align:center;background:rgba(180,220,160,.1)" '+ce+' data-hfield="prev" data-hidx="'+idx+'" onblur="cellSave(this)">'+(item.prev||0)+'</td>';
-rows+='<td style="border:1px solid var(--border);padding:3px 3px;font-family:var(--mono);font-size:11px;text-align:center;background:rgba(15,158,99,.08);'+(item.orlogo>0?'color:var(--green);font-weight:700':'color:var(--text3)')+'" '+ce+' data-hfield="orlogo" data-hidx="'+idx+'" onblur="cellSave(this)">'+(item.orlogo>0?'+'+item.orlogo:'')+'</td>';
-rows+='<td style="border:1px solid var(--border);padding:3px 3px;font-family:var(--mono);font-size:11px;text-align:center;background:rgba(240,160,32,.07);'+(item.zarlaaga>0?'color:var(--amber);font-weight:700':'color:var(--text3)')+'" '+ce+' data-hfield="zarlaaga" data-hidx="'+idx+'" onblur="cellSave(this)">'+(item.zarlaaga>0?'-'+item.zarlaaga:'')+'</td>';
-rows+='<td style="border:1px solid var(--border);padding:3px 3px;font-family:var(--mono);font-size:12px;text-align:center;background:rgba(26,95,232,.07);'+qs+'" '+ce+' data-hfield="uldegdel" data-hidx="'+idx+'" onblur="cellSave(this)">'+item.uldegdel+'</td>';
+      HABEA_COLS.forEach(function(col){rows+=getHabeaCellVal(item,col,ce,idx);});
 var badge=item.uldegdel<=0?'<span class="badge out">Дууссан</span>':item.uldegdel<=3?'<span class="badge low">Дутуу</span>':'<span class="badge ok">Хэвийн</span>';
 rows+='<td style="border:1px solid var(--border);padding:3px 3px;">'+badge+'</td>';
 rows+='<td class="no-print" style="border:1px solid var(--border);padding:2px 3px;"><div class="actb">';
@@ -2317,7 +2312,92 @@ function printMonthHistoryDirect(){
   doPrint(html);
 }
 var _invXlData=null;
-// ===== НӨӨЦ SHEET НЭМЭХ =====
+// ===== БАГАНЫН ДАРААЛАЛ ӨӨРЧЛӨХ =====
+// Нөөц болон ХАБЭА хүснэгтийн баганыг урагш/хойш шилжүүлэх
+// Баганын тохиргоог localStorage-д хадгална
+
+var INV_COLS=JSON.parse(localStorage.getItem('bs3_inv_cols')||'null')||
+  ['prev','orlogo','zarlaaga','uldegdel'];
+var HABEA_COLS=JSON.parse(localStorage.getItem('bs3_habea_cols')||'null')||
+  ['prev','orlogo','zarlaaga','uldegdel'];
+
+var INV_COL_LABELS={prev:'Эхний',orlogo:'Орлого',zarlaaga:'Зарлага',uldegdel:'Үлдэгдэл'};
+var INV_COL_BG={prev:'#d4e8c4',orlogo:'#c4e8d0',zarlaaga:'#f0dcc4',uldegdel:'#c4d4f0'};
+var INV_COL_STYLE={
+  prev:'font-family:var(--mono);font-size:11px;text-align:center;background:rgba(180,220,160,.1)',
+  orlogo:'font-family:var(--mono);font-size:11px;text-align:center;background:rgba(15,158,99,.08)',
+  zarlaaga:'font-family:var(--mono);font-size:11px;text-align:center;background:rgba(240,160,32,.07)',
+  uldegdel:'font-family:var(--mono);font-size:12px;text-align:center;background:rgba(26,95,232,.07)'
+};
+
+function moveInvCol(colIdx,dir){
+  // colIdx: 2=Эхний,3=Орлого,4=Зарлага,5=Үлдэгдэл (thead-д)
+  var arrIdx=colIdx-2; // 0-3
+  var newIdx=arrIdx+dir;
+  if(newIdx<0||newIdx>=INV_COLS.length)return;
+  var tmp=INV_COLS[arrIdx];
+  INV_COLS[arrIdx]=INV_COLS[newIdx];
+  INV_COLS[newIdx]=tmp;
+  localStorage.setItem('bs3_inv_cols',JSON.stringify(INV_COLS));
+  updateInvColHeaders();
+  renderInv();
+  toast('Багана шилжлээ','ok');
+}
+function updateInvColHeaders(){
+  var thead=document.getElementById('inv-thead');
+  if(!thead)return;
+  var ths=thead.querySelectorAll('th');
+  // ths[2]-ths[5] нь өөрчлөгдөх баганууд
+  INV_COLS.forEach(function(col,i){
+    var th=ths[i+2];
+    if(!th)return;
+    th.style.background=INV_COL_BG[col]||'#c8d8f0';
+    th.innerHTML=INV_COL_LABELS[col]+' <i class="ti ti-arrows-left-right" style="font-size:9px;opacity:.5"></i>';
+    th.onclick=(function(idx){return function(){moveInvCol(idx+2,idx===0?1:-1);};})(i);
+    th.title='Дарж шилжүүлэх';
+  });
+}
+function moveHabeaCol(colIdx,dir){
+  var arrIdx=colIdx-2;
+  var newIdx=arrIdx+dir;
+  if(newIdx<0||newIdx>=HABEA_COLS.length)return;
+  var tmp=HABEA_COLS[arrIdx];
+  HABEA_COLS[arrIdx]=HABEA_COLS[newIdx];
+  HABEA_COLS[newIdx]=tmp;
+  localStorage.setItem('bs3_habea_cols',JSON.stringify(HABEA_COLS));
+  renderHabea();
+  toast('Багана шилжлээ','ok');
+}
+function getInvCellVal(item,col,ce,ri){
+  var style='border:1px solid var(--border);padding:2px 3px;'+INV_COL_STYLE[col];
+  var val='';
+  var colorStyle='';
+  if(col==='prev'){val=item.prev||0;}
+  else if(col==='orlogo'){
+    colorStyle=item.orlogo>0?'color:var(--green);font-weight:700':'color:var(--text3)';
+    val=item.orlogo>0?'+'+item.orlogo:'';
+  }
+  else if(col==='zarlaaga'){
+    colorStyle=item.zarlaaga>0?'color:var(--amber);font-weight:700':'color:var(--text3)';
+    val=item.zarlaaga>0?'-'+item.zarlaaga:'';
+  }
+  else if(col==='uldegdel'){
+    var qs=item.uldegdel<=0?'color:var(--red);font-weight:700':item.uldegdel<=(item.minwarn||5)?'color:var(--amber);font-weight:700':'color:var(--green);font-weight:700';
+    colorStyle=qs;
+    val=item.uldegdel;
+  }
+  return '<td style="'+style+';'+colorStyle+'" '+ce+' data-field="'+col+'" data-ri="'+ri+'" onblur="cellSave(this)">'+val+'</td>';
+}
+function getHabeaCellVal(item,col,ce,idx){
+  var val='';
+  var style='border:1px solid var(--border);padding:3px 3px;font-family:var(--mono);font-size:11px;text-align:center;';
+  if(col==='prev'){style+='background:rgba(180,220,160,.1)';val=item.prev||0;}
+  else if(col==='orlogo'){style+='background:rgba(15,158,99,.08);'+(item.orlogo>0?'color:var(--green);font-weight:700':'color:var(--text3)');val=item.orlogo>0?'+'+item.orlogo:'';}
+  else if(col==='zarlaaga'){style+='background:rgba(240,160,32,.07);'+(item.zarlaaga>0?'color:var(--amber);font-weight:700':'color:var(--text3)');val=item.zarlaaga>0?'-'+item.zarlaaga:'';}
+  else if(col==='uldegdel'){style+='background:rgba(26,95,232,.07);font-size:12px;'+(item.uldegdel<=0?'color:var(--red);font-weight:700':item.uldegdel<=3?'color:var(--amber);font-weight:700':'color:var(--green);font-weight:700');val=item.uldegdel;}
+  return '<td style="'+style+'" '+ce+' data-hfield="'+col+'" data-hidx="'+idx+'" onblur="cellSave(this)">'+val+'</td>';
+}
+
 var _invAddData=null;
 function toggleInvAdd(){
   var z=document.getElementById('inv-add-zone');
@@ -3491,7 +3571,7 @@ function forceReloadData(){
   location.reload();
 }
 
-document.getElementById('un').value='Сэлбэг';
+document.getElementById('un').value='admin';
 document.getElementById('pw').focus();
 
 </script>
